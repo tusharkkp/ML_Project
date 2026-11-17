@@ -1,0 +1,96 @@
+{
+  "project": "AI-Based Food Inflation Prediction and Household Affordability Monitoring System",
+  "model_name": "MultipleLinearRegression",
+  "artifact_file": "price_prediction_model.joblib",
+  "preprocessing_pipeline": "preprocessing_pipeline.joblib",
+  "training_date": "2026-11-17 19:45:16",
+  "dataset_version": "v1.0.0",
+  "dataset_source": "AGMARKNET Pune APMC Mandi Daily Series (2016-2018)",
+  "commodity": "Tomato",
+  "market": "Pune APMC",
+  "district": "Pune",
+  "state": "Maharashtra",
+  "target_variable": "target_price_t_plus_1",
+  "target_definition": "Modal wholesale price on the next active APMC mandi trading session (Rs/Quintal)",
+  "prediction_horizon": "1 active trading session ahead (t+1)",
+  "feature_names": [
+    "price_lag_1",
+    "price_lag_3",
+    "price_lag_7",
+    "rolling_mean_7",
+    "rolling_std_7",
+    "rolling_min_7",
+    "rolling_max_7",
+    "price_momentum_7",
+    "daily_spread",
+    "arrival_tonnes",
+    "arrival_lag_1",
+    "rolling_arrival_mean_7",
+    "month",
+    "day_of_week",
+    "is_monsoon_season"
+  ],
+  "feature_count": 15,
+  "training_samples": 741,
+  "test_samples": 132,
+  "best_hyperparameters": {
+    "fit_intercept": true
+  },
+  "test_evaluation_metrics": {
+    "Model": "Multiple Linear Regression",
+    "MAE": 79.35,
+    "MSE": 12021.23,
+    "RMSE": 109.64,
+    "R2": 0.7723,
+    "MAPE (%)": 12.18
+  },
+  "all_models_evaluated": [
+    {
+      "Model": "Naive Persistence Baseline",
+      "MAE": 70.45,
+      "MSE": 13106.06,
+      "RMSE": 114.48,
+      "R2": 0.7518,
+      "MAPE (%)": 10.64
+    },
+    {
+      "Model": "Multiple Linear Regression",
+      "MAE": 79.35,
+      "MSE": 12021.23,
+      "RMSE": 109.64,
+      "R2": 0.7723,
+      "MAPE (%)": 12.18
+    },
+    {
+      "Model": "Polynomial Regression (deg=1)",
+      "MAE": 79.35,
+      "MSE": 12020.83,
+      "RMSE": 109.64,
+      "R2": 0.7723,
+      "MAPE (%)": 12.18
+    },
+    {
+      "Model": "Decision Tree (depth=5)",
+      "MAE": 84.72,
+      "MSE": 15599.3,
+      "RMSE": 124.9,
+      "R2": 0.7045,
+      "MAPE (%)": 12.71
+    },
+    {
+      "Model": "Random Forest Ensemble",
+      "MAE": 85.95,
+      "MSE": 14544.99,
+      "RMSE": 120.6,
+      "R2": 0.7245,
+      "MAPE (%)": 12.63
+    }
+  ],
+  "dependencies": {
+    "python": "3.12.10",
+    "scikit-learn": "1.9.1",
+    "joblib": "1.6.0",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3"
+  }
+}

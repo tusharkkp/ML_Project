@@ -1,0 +1,144 @@
+--- Page 1 ---
+ 
+ 
+ 
+MOSPI API PLATFORM 
+CPI API USER MANUAL 
+ 
+  
+      
+COMPUTER CENTRE 
+Ministry of Statistics and Programme Implementation  
+
+--- Page 2 ---
+Contents 
+ 
+1. CPI APIs and execution process ................................ ................................ ................................ .......................  2 
+2. User Signup ................................ ................................ ................................ ................................ .......................  3 
+3. Login for access token ................................ ................................ ................................ ................................ ....... 7 
+4. Group and SubGroup level Inflation and Index data ................................ ................................ ......................  9 
+5. Item level Inflation and Index data ................................ ................................ ................................ .................  13 
+ 
+ 
+  
+
+--- Page 3 ---
+1. CPI APIs and execution process 
+ 
+1.1. This user guide documents the usage of the API platform of the Ministry of 
+Statistics and Programme Implementation. 
+1.2. The Base URL for accessing the API platform is:  https://api.mospi.gov.in 
+1.3. On accessing this Base URL, a user manual button is available which will 
+download a PDF file with the documentation and usage details of the API . 
+1.4. A Metadata button on this page will download an XLS file for the codes used in 
+the parameters to fetch data using the API.  
+1.5. The following process is to be followed for fetching the CPI data through the 
+APIs: 
+1.5.1. Base URL/api/users/usersignup: Using this API, the user is required to 
+sign up the first time using a unique email which can be used only 
+once. 
+1.5.2. Base URL/api/login: Using this API, the user is required to obtain an 
+access token which is valid for 15 minutes to fetch the required data 
+through the APIs. Without access token the APIs will fetch only the first 
+10 records.   
+1.5.3. Base URL/api/getCPIIndex: This API will fetch the Group and 
+SubGroup level CPI Index and Inflation records from Jan 2013 
+onwards. 
+1.5.4. Base URL/api/getItemIndex: This API will fetch the Item level Index 
+and Inflation records from Jan 2014 onwards. 
+1.6. The execution of the above process is detailed in the following sections through 
+Swagger tool and Postman. 
+1.7. Swagger UI tool is for documentation purpose of the API and access token is 
+not available via the Swagger tool which will return only 10 records.  
+ 
+  
+
+--- Page 4 ---
+2. User Signup 
+ 
+2.1. Using Swagger, the steps are mentioned below: 
+2.1.1. The users of the platform are required to sign up for using this API 
+platform by accessing the Base URL/api/users/usersignup. 
+ 
+ 
+ 
+2.1.2. The execution of this API through the Swagger tool is as mentioned in 
+the below steps. 
+ 
+ 
+ 
+2.1.2.1. Access the Base URL in a web browser 
+2.1.2.2. Click on the “Try it out” button next to the API 
+2.1.2.3. Enter the details in the query parameters listed as below : 
+{ 
+
+
+--- Page 5 ---
+  "username": "test", 
+  "email": "test@test.com", 
+  "password": "Test@12345", 
+  "organization": "Ministry of Statistics and Programme Implementation", 
+  "purpose": "View/Download the Data" 
+} 
+2.1.2.4. No special characters are allowed in the username, organization and 
+purpose fields. 
+2.1.2.5. One email can be used for registration only once.   
+2.1.2.6. Click on the Execute button. The API response code and 
+description will be returned. A 200 code indicates the execution 
+was successful. 
+ 
+ 
+ 
+2.2. Using Postman, the steps are mentioned below: 
+2.2.1. Download Postman from any web browser by visiting the link 
+https://www.postman.com/downloads/ 
+ 
+ 
+
+
+--- Page 6 ---
+2.2.2. After downloading Postman app, open the app sign in or use the 
+“lightweight API Client” and you will see the following menu : 
+ 
+ 
+3.2.3 Click the “+” button to add a request. 
+ 
+3.2.4 Expand the method button. 
+ 
+2.2.3. Use the signup API to register user for using the API platform, as 
+described below.  
+2.2.3.1. Change the method to POST 
+
+
+--- Page 7 ---
+2.2.3.2. Enter the API http://10.153.128.180/api/users/usersignup in the 
+textbox 
+2.2.3.3. Select Body, select raw and JSON from the dropdown as 
+highlighted in Yellow below 
+2.2.3.4. Enter the data as shown below for the signup user details  
+2.2.3.5. Click Send 
+ 
+ 
+ 
+2.2.3.6. A success message will be sent as the response of the API  as shown 
+above. 
+  
+
+
+--- Page 8 ---
+3. Login for access token 
+ 
+3.1. The below steps describe the process to get the access token for the API 
+through POSTMAN 
+3.2. Select “POST” and add the URL http://api.mospi.gov/api/login 
+ 
+ 
+3.3. Click on “body” and on the value box enter the credentials, Email and 
+password in JSON or any selected format, for e.g. in JSON- 
+ { 
+“email”: “hjo@test.com”, 
+“password”: “Test@123434435” 
+} 
+ 
+  
+3.4. Click “Send”.  

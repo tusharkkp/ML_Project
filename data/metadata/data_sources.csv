@@ -1,0 +1,10 @@
+source_id,source_name,publisher,data_category,acquisition_method,base_url,historical_coverage,frequency,geography,auth_type,status
+MOSPI_CPI,Consumer Price Index API,MoSPI,cpi,api,https://api.mospi.gov.in/api/cpi/,2014-2026,monthly,"All-India (99), Maharashtra (27)",none,verified
+MOSPI_HCES,Household Consumption Expenditure Survey API,MoSPI,household_expenditure,api,https://api.mospi.gov.in/api/hces/,2022-2024,survey_round,"All-India, Maharashtra, Rural/Urban",none,verified
+MOSPI_HCES_FS,HCES 2022-23 Official Factsheet,MoSPI NSSO,household_expenditure,pdf_table_extract,https://www.mospi.gov.in/sites/default/files/publication_reports/Factsheet_HCES_2022-23.pdf,2022-2023,survey_round,"All-India, Maharashtra, 12 Fractile Classes",none,verified
+DATA_GOV_AGRI,Current Daily Price of Various Commodities from Various Markets,OGD Platform / MoA,wholesale,api,https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070,recent_rolling,daily,"National, Maharashtra mandis",api_key,verified
+DCA_BULLETIN,DCA Daily Price Monitoring Bulletin,Department of Consumer Affairs,retail,scraping,https://fcainfoweb.nic.in/Reports/DB/DBprices.aspx,recent_and_benchmarks,daily,All-India Average,none,verified
+AGRI_HIST_MH,Historical Agmarknet Mandi Archives - Maharashtra,Academic Research Open Data Mirror,wholesale,structured_csv,https://github.com/ICTD-IITD/Commodity_Analysis,2016-2021,daily,"Maharashtra (Pune, Nashik, Ahmednagar, Mumbai, Nagpur)",none,verified
+DCA_HIST_RETAIL,Historical Retail Price Monitoring Archive,Academic Research Open Data Mirror,retail,structured_csv,https://github.com/ICTD-IITD/Commodity_Analysis,2010-2021,daily,"All-India, Maharashtra Centres (Mumbai, Pune, Nagpur, Nashik)",none,verified
+CEDA_AGRI,CEDA Agmarknet API,CEDA Ashoka University,wholesale,api,https://api.ceda.ashoka.edu.in/v1,2014-present,daily_monthly,"National, State, District, Market",bearer_jwt,requires_account
+WB_INFLATION,World Bank India Inflation Indicators,World Bank,cpi,api,https://api.worldbank.org/v2/country/IND/indicator/FP.CPI.TOTL.ZG,1960-2025,annual,National,none,verified

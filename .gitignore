@@ -1,0 +1,30 @@
+# Environment variables and secrets
+.env
+*.env
+!.env.example
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs and checkpoints
+*.log
+data/metadata/collection_logs/*.log
+temp/
+tmp/

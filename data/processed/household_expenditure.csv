@@ -1,0 +1,153 @@
+survey_year,geography,sector,indicator_name,item_group,fractile_class,mpce_value_rs,share_percentage,data_source
+2022-23,All India,Rural,Food vs Non-Food MPCE & Share,Food,All Classes,1750.0,46.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 1
+2022-23,All India,Urban,Food vs Non-Food MPCE & Share,Food,All Classes,2530.0,39.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 1
+2022-23,All India,Rural,Food vs Non-Food MPCE & Share,Non-food,All Classes,2023.0,54.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 1
+2022-23,All India,Urban,Food vs Non-Food MPCE & Share,Non-food,All Classes,3929.0,61.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 1
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,0-5%,1373.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,0-5%,2001.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,5-10%,1782.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,5-10%,2607.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,10-20%,2112.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,10-20%,3157.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,20-30%,2454.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,20-30%,3762.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,30-40%,2768.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,30-40%,4348.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,40-50%,3094.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,40-50%,4963.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,50-60%,3455.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,50-60%,5662.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,60-70%,3887.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,60-70%,6524.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,70-80%,4458.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,70-80%,7673.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,80-90%,5356.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,80-90%,9582.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,90-95%,6638.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,90-95%,12399.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,95-100%,10501.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,95-100%,20824.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE across Fractile Classes,Total Consumption,All Classes,3773.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Urban,MPCE across Fractile Classes,Total Consumption,All Classes,6459.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 4
+2022-23,All India,Rural,MPCE and Share by Item Group,cereals & cereal substitutes,All Classes,185.0,235.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,cereals & cereal substitutes,All Classes,4.91,3.64,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,pulses & their products*,All Classes,76.0,90.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,pulses & their products*,All Classes,2.01,1.39,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,sugar & salt,All Classes,35.0,39.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,sugar & salt,All Classes,0.93,0.6,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,milk & milk products,All Classes,314.0,466.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,milk & milk products,All Classes,8.33,7.22,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,vegetables,All Classes,203.0,245.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,vegetables,All Classes,5.38,3.8,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,fruits,All Classes,140.0,246.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,fruits,All Classes,3.71,3.8,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,"egg, fish & meat",All Classes,185.0,231.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,"egg, fish & meat",All Classes,4.91,3.57,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,edible oil,All Classes,136.0,153.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,edible oil,All Classes,3.59,2.37,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,spices,All Classes,113.0,138.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,spices,All Classes,2.98,2.13,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,"beverages, refreshments, processed food#",All Classes,363.0,687.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,"beverages, refreshments, processed food#",All Classes,9.62,10.64,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,food total,All Classes,1750.0,2530.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,food total,All Classes,46.38,39.17,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,"pan, tobacco & intoxicants",All Classes,143.0,157.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,"pan, tobacco & intoxicants",All Classes,3.79,2.43,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,fuel and light,All Classes,251.0,404.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,fuel and light,All Classes,6.66,6.26,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,education,All Classes,125.0,374.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,education,All Classes,3.3,5.78,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,medical,All Classes,269.0,382.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,medical,All Classes,7.13,5.91,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,conveyance,All Classes,285.0,555.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,conveyance,All Classes,7.55,8.59,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,consumer services excluding,All Classes,192.0,382.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,consumer services excluding,All Classes,5.08,5.92,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,"misc. goods, entertainment",All Classes,234.0,424.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,"misc. goods, entertainment",All Classes,6.21,6.56,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,rent,All Classes,30.0,423.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,rent,All Classes,0.78,6.56,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,taxes and cesses,All Classes,5.0,16.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,taxes and cesses,All Classes,0.13,0.24,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,"clothing, bedding & footwear",All Classes,230.0,350.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,"clothing, bedding & footwear",All Classes,6.1,5.41,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,durable goods,All Classes,260.0,463.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,durable goods,All Classes,6.89,7.17,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,non-food total,All Classes,2023.0,3929.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,non-food total,All Classes,53.62,60.83,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Rural,MPCE and Share by Item Group,all items,All Classes,3773.0,6459.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,All India,Urban,MPCE and Share by Item Group,all items,All Classes,100.0,100.0,MoSPI NSSO HCES 2022-23 Factsheet Statement 5
+2022-23,Andhra Pradesh,Rural,State-wise Average MPCE,Total Consumption,All Classes,4870.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Andhra Pradesh,Urban,State-wise Average MPCE,Total Consumption,All Classes,6782.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Arunachal Pradesh,Rural,State-wise Average MPCE,Total Consumption,All Classes,5276.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Arunachal Pradesh,Urban,State-wise Average MPCE,Total Consumption,All Classes,8636.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Assam,Rural,State-wise Average MPCE,Total Consumption,All Classes,3432.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Assam,Urban,State-wise Average MPCE,Total Consumption,All Classes,6136.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Bihar,Rural,State-wise Average MPCE,Total Consumption,All Classes,3384.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Bihar,Urban,State-wise Average MPCE,Total Consumption,All Classes,4768.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Chhattisgarh,Rural,State-wise Average MPCE,Total Consumption,All Classes,2466.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Chhattisgarh,Urban,State-wise Average MPCE,Total Consumption,All Classes,4483.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Delhi,Rural,State-wise Average MPCE,Total Consumption,All Classes,6576.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Delhi,Urban,State-wise Average MPCE,Total Consumption,All Classes,8217.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Goa,Rural,State-wise Average MPCE,Total Consumption,All Classes,7367.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Goa,Urban,State-wise Average MPCE,Total Consumption,All Classes,8734.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Gujarat,Rural,State-wise Average MPCE,Total Consumption,All Classes,3798.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Gujarat,Urban,State-wise Average MPCE,Total Consumption,All Classes,6621.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Haryana,Rural,State-wise Average MPCE,Total Consumption,All Classes,4859.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Haryana,Urban,State-wise Average MPCE,Total Consumption,All Classes,7911.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Himachal Pradesh,Rural,State-wise Average MPCE,Total Consumption,All Classes,5561.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Himachal Pradesh,Urban,State-wise Average MPCE,Total Consumption,All Classes,8075.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Jharkhand,Rural,State-wise Average MPCE,Total Consumption,All Classes,2763.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Jharkhand,Urban,State-wise Average MPCE,Total Consumption,All Classes,4931.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Karnataka,Rural,State-wise Average MPCE,Total Consumption,All Classes,4397.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Karnataka,Urban,State-wise Average MPCE,Total Consumption,All Classes,7666.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Kerala,Rural,State-wise Average MPCE,Total Consumption,All Classes,5924.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Kerala,Urban,State-wise Average MPCE,Total Consumption,All Classes,7078.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Madhya Pradesh,Rural,State-wise Average MPCE,Total Consumption,All Classes,3113.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Madhya Pradesh,Urban,State-wise Average MPCE,Total Consumption,All Classes,4987.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Maharashtra,Rural,State-wise Average MPCE,Total Consumption,All Classes,4010.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Maharashtra,Urban,State-wise Average MPCE,Total Consumption,All Classes,6657.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Manipur,Rural,State-wise Average MPCE,Total Consumption,All Classes,4360.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Manipur,Urban,State-wise Average MPCE,Total Consumption,All Classes,4880.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Meghalaya,Rural,State-wise Average MPCE,Total Consumption,All Classes,3514.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Meghalaya,Urban,State-wise Average MPCE,Total Consumption,All Classes,6433.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Mizoram,Rural,State-wise Average MPCE,Total Consumption,All Classes,5224.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Mizoram,Urban,State-wise Average MPCE,Total Consumption,All Classes,7655.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Nagaland,Rural,State-wise Average MPCE,Total Consumption,All Classes,4393.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Nagaland,Urban,State-wise Average MPCE,Total Consumption,All Classes,7098.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Odisha,Rural,State-wise Average MPCE,Total Consumption,All Classes,2950.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Odisha,Urban,State-wise Average MPCE,Total Consumption,All Classes,5187.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Punjab,Rural,State-wise Average MPCE,Total Consumption,All Classes,5315.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Punjab,Urban,State-wise Average MPCE,Total Consumption,All Classes,6544.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Rajasthan,Rural,State-wise Average MPCE,Total Consumption,All Classes,4263.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Rajasthan,Urban,State-wise Average MPCE,Total Consumption,All Classes,5913.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Sikkim,Rural,State-wise Average MPCE,Total Consumption,All Classes,7731.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Sikkim,Urban,State-wise Average MPCE,Total Consumption,All Classes,12105.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Tamil Nadu,Rural,State-wise Average MPCE,Total Consumption,All Classes,5310.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Tamil Nadu,Urban,State-wise Average MPCE,Total Consumption,All Classes,7630.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Telangana,Rural,State-wise Average MPCE,Total Consumption,All Classes,4802.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Telangana,Urban,State-wise Average MPCE,Total Consumption,All Classes,8158.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Tripura,Rural,State-wise Average MPCE,Total Consumption,All Classes,5206.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Tripura,Urban,State-wise Average MPCE,Total Consumption,All Classes,7405.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Uttarakhand,Rural,State-wise Average MPCE,Total Consumption,All Classes,4641.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Uttarakhand,Urban,State-wise Average MPCE,Total Consumption,All Classes,7004.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Uttar Pradesh,Rural,State-wise Average MPCE,Total Consumption,All Classes,3191.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Uttar Pradesh,Urban,State-wise Average MPCE,Total Consumption,All Classes,5040.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,West Bengal,Rural,State-wise Average MPCE,Total Consumption,All Classes,3239.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,West Bengal,Urban,State-wise Average MPCE,Total Consumption,All Classes,5267.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Andaman & N Islands,Rural,State-wise Average MPCE,Total Consumption,All Classes,7332.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Andaman & N Islands,Urban,State-wise Average MPCE,Total Consumption,All Classes,10268.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Chandigarh,Rural,State-wise Average MPCE,Total Consumption,All Classes,7467.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Chandigarh,Urban,State-wise Average MPCE,Total Consumption,All Classes,12575.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Dadra & Nagar Haveli and Daman & Diu,Rural,State-wise Average MPCE,Total Consumption,All Classes,4184.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Dadra & Nagar Haveli and Daman & Diu,Urban,State-wise Average MPCE,Total Consumption,All Classes,6298.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Jammu & Kashmir,Rural,State-wise Average MPCE,Total Consumption,All Classes,4296.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Jammu & Kashmir,Urban,State-wise Average MPCE,Total Consumption,All Classes,6179.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Ladakh,Rural,State-wise Average MPCE,Total Consumption,All Classes,4035.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Ladakh,Urban,State-wise Average MPCE,Total Consumption,All Classes,6215.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Lakshadweep,Rural,State-wise Average MPCE,Total Consumption,All Classes,5895.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Lakshadweep,Urban,State-wise Average MPCE,Total Consumption,All Classes,5475.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Puducherry,Rural,State-wise Average MPCE,Total Consumption,All Classes,6590.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,Puducherry,Urban,State-wise Average MPCE,Total Consumption,All Classes,7706.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,all-India,Rural,State-wise Average MPCE,Total Consumption,All Classes,3773.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8
+2022-23,all-India,Urban,State-wise Average MPCE,Total Consumption,All Classes,6459.0,,MoSPI NSSO HCES 2022-23 Factsheet Statement 8

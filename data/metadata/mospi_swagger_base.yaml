@@ -1,0 +1,82 @@
+openapi: 3.0.1
+info:
+  title: API for User Registration
+  version: 1.0.11
+servers:
+- url: https://api.mospi.gov.in/
+tags:
+- name: User Registration
+  description: First time users can register here.
+-
+paths:
+  /api/users/usersignup:
+    post:
+      tags:
+      - User Registration
+      operationId: signupUsingPOST
+      requestBody:
+        description: In username please enter the email id containing @ only and no other special character.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: test@test.com
+                password:
+                  type: string
+                  example: Test@12345
+                organization:
+                  type: string
+                  example: Ministry of Statistics and Programme Implementation
+                purpose:
+                  type: string
+                  example: View/Download the Data
+                gender:
+                  type: string
+                  example: Male
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Invalid request body
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Username is duplicate. You don't have permission to perform
+                      this operation!
+      x-codegen-request-body-name: User
+components:
+  securitySchemes:
+    bearerAuth:
+      type: apiKey
+      description: Bearer token to access these api endpoints
+      name: Authorization
+      in: header
+x-original-swagger-version: "2.0"

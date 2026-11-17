@@ -1,0 +1,281 @@
+openapi: 3.0.1
+info:
+  title: Annual Survey of Unincorporated Sector Enterprises (ASUSE)
+
+  version: 1.0.11
+servers:
+- url: https://api.mospi.gov.in/
+tags:
+- name: Annual Survey of Unincorporated Sector Enterprises.
+  description: Year-Wise Annual Survey of Unincorporated Sector Enterprises (ASUSE).
+paths:
+
+  /api/asuse/getAsuseRecords:
+    get:
+      tags:
+      - Annual Survey of Unincorporated Sector Enterprises.
+      operationId: ASUSEIndicatorValues.
+      parameters:
+      - name: indicator_code
+        required: true
+        in: query
+        schema:
+          default: "Estimated Number of Establishments Pursuing Mixed Activities"
+          enum:
+          - "Estimated Number of Establishments Pursuing Mixed Activities"
+          - "State/UT-wise Estimated Number of Establishments Pursuing Mixed Activities"
+          - "Per 1000 Distribution of Establishments by Type of Ownership"
+          - "State/UT-wise Per 1000 Distribution of Establishments by Type of Ownership"
+          - "Per 1000 Distribution of Proprietary and Partnership Establishments by Level of General Education of Owner-Major Partner"
+          - "Per 1000 Distribution of Prop. & Partnership Establishments by Social Group of Owner-Major Partner"
+          - "State/UT-wise Per 1000 Distribution of Prop. & Partnership Establishments by Social Group of Owner-Major Partner"
+          - "Per 1000 Distribution of Prop. & Partnership Estt. by Number of Other Economic Activities"
+          - "State/UT-wise Number Per 1000 of Establishments Maintaining any Bank Account-Post Office Savings Bank Account"
+          - "Per 1000 Distribution of Establishments by Type of Location"
+          - "State/UT-wise Per 1000 Distribution of Establishments by Type of Location"
+          - "Per 1000 Distribution of Establishments by Nature of Operation"
+          - "State/UT-wise Per 1000 Distribution of Establishments by Nature of Operation"
+          - "Per 1000 Distribution of Establishments by Number of Months Operated During Last 365 Days"
+          - "State/UT-wise Per 1000 Distribution of Establishments by Number of Months Operated During Last 365 Days"
+          - "Per 1000 Distribution of Establishments by Number of Hours Normally Worked in a Day"
+          - "State/UT-wise Per 1000 Distribution of Establishments by Number of Hours Normally Worked in a Day"
+          # - "Per 1000 Distribution of Establishments Maintaining Audited Accounts"
+          - "Number of Per 1000 of Establishments which are NPIs (by type of majot receipts) and non-NPIs"
+          - "Number Per 1000 of Establishments Using Computers and Using Internet During Last 365 Days"
+          - "State/UT-wise Number Per 1000 of Establishments Using Computers and Using Internet During Last 365 Days"
+          - "Number Per 1000 of Establishments Registered Under Different Acts-Authorities"
+          - "State/UT-wise Number Per 1000 of Establishments Registered Under Different Acts-Authorities"
+          # - "Per 1000 Distribution of Estt. Providing Manufacturing-other Services on Contract"
+          - "State/UT-wise Estimated Number of Establishments Serving as Franchisee Outlet"
+          - "Estimated Number of Workers by Nature of Employment and Gender"
+          - "State/UT-wise Estimated Number of Workers by Nature of Employment and Gender"
+          - "Estimated Number of Workers by Type of Workers"
+          - "State/UT-wise Estimated Number of Workers by Type of Workers"
+          - "Estimated Annual Emoluments (Rs.) Per Hired Worker"
+          - "State/UT-wise Estimated Annual Emoluments (Rs.) Per Hired Worker"
+          - "Estimated Annual Gross Value Added (GVA) Per Worker (Rs.)"
+          - "State/UT-wise Estimated Annual Gross Value Added (GVA) Per Worker (Rs.)"
+          - "Estimated Annual Gross Value Added (GVA) Per Establishment (Rs.)"
+          - "State/UT-wise Estimated Annual Gross Value Added (GVA) Per Establishment (Rs.)"
+          # - "Estimated Market Value of Land and Fixed Assets and Outstanding Loans Per Establishments (in Rs.) for Each Activity Category"
+          # - "Estimated Market Value of Land and Fixed Assets and Outstanding Loans Per Establishments (in Rs.) for Each State-ut"
+          - "Number Per 1000 of Establishments Using Internet by Type of Its Use"
+          - "Estimated Value of Key Characteristics by Number of Workers"
+      - name: frequency_code
+        in: query
+        description: Enter the Frequency Code (1 - Annually, 2 - Quarterly)
+        schema:
+          type: string
+      - name: year
+        in: query
+        description: Enter the Year (format YYYY-YY. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: quarter_code
+        in: query
+        description: Enter the Quarter_code (1 , 2. Comma separated for multiple values)
+        schema:
+          type: string
+
+      - name: state_ut_code
+        in: query
+        description: Enter the State/UT code (from 1 to 37. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: sub_indicator_code
+        in: query
+        description: Enter the Sub Indicator code (from 1 to 19. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: activity_category_code
+        in: query
+        description: Enter the Activity Category code (from 1 to 50. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: sector_code
+        in: query
+        description: Enter the Sector code (from 1 to 3. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: gender_code
+        in: query
+        description: Enter the Gender code (from 1 to 4. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: ownership_type_code
+        in: query
+        description: Enter the Ownership Type code (from 1 to 8. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: establishment_type_code
+        in: query
+        description: Enter the Establishment Type code (from 1 to 3. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: general_education_level_code
+        in: query
+        description: Enter the General Education Level code (from 1 to 7. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: social_group_of_owner_major_partner_code
+        in: query
+        description: Enter the Social Group of Owner/Major Partner code (from 1 to 6. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: broad_activity_category_code
+        in: query
+        description: Enter the Broad Activity Category code (from 1 to 4. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: other_economic_activitycount_code
+        in: query
+        description: Enter the Other Economic Activitycount code (from 1 to 6. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: account_holder_code
+        in: query
+        description: Enter the Account Holder code (from 1 to 3. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: location_of_establishments_code
+        in: query
+        description: Enter the Location of Establishments code (from 1 to 7. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: nature_of_operation_code
+        in: query
+        description: Enter the Nature of Operation code (from 1 to 4. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: no_of_months_operated_code
+        in: query
+        description: Enter the No. of Months Operated code (from 1 to 6. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: no_of_working_hours_code
+        in: query
+        description: Enter the No. of Working Hours code (from 1 to 5. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: audit_status_code
+        in: query
+        description: Enter the Audit Status code (from 1 to 3. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: npi_status_code
+        in: query
+        description: Enter the NPI Status code (from 1 to 4. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: acts_agency_of_registration_code
+        in: query
+        description: Enter the Acts/Agency of Registration code (from 1 to 10. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: services_contract_code
+        in: query
+        description: Enter the Services Contract code (from 1 to 5. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: nature_of_employment_code
+        in: query
+        description: Enter the Nature of Employment code (from 1 to 3. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: type_of_worker_code
+        in: query
+        description: Enter the Type of Worker code (from 1 to 6. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: hired_worker_code
+        in: query
+        description: Enter the Hired Worker code (from 1 to 3. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: fixed_assets_code
+        in: query
+        description: Enter the Fixed Assets code (from 1 to 3. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: usage_of_internet_code
+        in: query
+        description: Enter the Usage of Internet code (from 1 to 13. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: worker_characteristics_code
+        in: query
+        description: Enter the Worker Characteristics code (from 1 to 7. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: worker_number_code
+        in: query
+        description: Enter the Worker Number code (from 1 to 21. Comma separated for multiple values)
+        schema:
+          type: string
+      - name: page
+        in: query
+        description: Enter the page no. (from 1 to n.)
+        schema:
+          type: string
+
+      - name: Format 
+        required: true
+        in: query
+        description: Select the Output format
+        schema:
+          type: string
+          default: JSON
+          enum:
+          - JSON
+          - CSV
+      responses:
+        "200":
+          description: A JSON array of user information
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Invalid request body
+            text/csv:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Invalid request body
+      
+        "409":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Requested item wasn't found!
+      security:
+      - bearerAuth: []
+ 
+components:
+  securitySchemes:
+    bearerAuth:
+      type: apiKey
+      description: Bearer token to access these api endpoints
+      name: Authorization
+      in: header
+x-original-swagger-version: "2.0"

@@ -1,0 +1,6 @@
+Model,MAE,MSE,RMSE,R2,MAPE (%)
+Naive Persistence Baseline,70.45,13106.06,114.48,0.7518,10.64
+Multiple Linear Regression,79.35,12021.23,109.64,0.7723,12.18
+Polynomial Regression (deg=1),79.35,12020.83,109.64,0.7723,12.18
+Decision Tree (depth=5),84.72,15599.3,124.9,0.7045,12.71
+Random Forest Ensemble,85.95,14544.99,120.6,0.7245,12.63

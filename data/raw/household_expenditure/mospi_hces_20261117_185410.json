@@ -1,0 +1,397 @@
+{
+  "collection_timestamp": "2026-11-17T18:54:10.888185",
+  "source": "MoSPI HCES API",
+  "total_records": 40,
+  "records": [
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Beverages, Processed Food, etc.",
+      "value": "9.62",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Cereal",
+      "value": "4.89",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Cereal Substitutes",
+      "value": "0.02",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Clothing & Bedding",
+      "value": "5.24",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Consumer Services Excluding Conveyance",
+      "value": "5.08",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Conveyance",
+      "value": "7.55",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Durable Goods",
+      "value": "6.89",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Edible Oil",
+      "value": "3.59",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Education",
+      "value": "3.3",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Percentage Share of Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Egg, Fish & Meat",
+      "value": "4.91",
+      "unit": "%"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Beverages, Processed Food, etc.",
+      "value": "363.06",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Cereal",
+      "value": "184.42",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Cereal Substitutes",
+      "value": "0.76",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Clothing & Bedding",
+      "value": "197.76",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Consumer Services Excluding Conveyance",
+      "value": "191.65",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Conveyance",
+      "value": "284.76",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Durable Goods",
+      "value": "260.1",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Edible Oil",
+      "value": "135.59",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Education",
+      "value": "124.69",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Monthly Per Capita Consumption Expenditure (MPCE) over Broad Categories in 30 Days",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "item_category": "Egg, Fish & Meat",
+      "value": "185.16",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "value": "3773",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Rural",
+      "imputation_type": "With Imputation",
+      "value": "3860",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Urban",
+      "imputation_type": "Without Imputation",
+      "value": "6459",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Urban",
+      "imputation_type": "With Imputation",
+      "value": "6521",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "Andaman & Nicobar Islands",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "value": "7332",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "Andaman & Nicobar Islands",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Rural",
+      "imputation_type": "With Imputation",
+      "value": "7332",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "Andaman & Nicobar Islands",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Urban",
+      "imputation_type": "Without Imputation",
+      "value": "10268",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "Andaman & Nicobar Islands",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Urban",
+      "imputation_type": "With Imputation",
+      "value": "10268",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "Andhra Pradesh",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "value": "4870",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "Andhra Pradesh",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE)",
+      "sector": "Rural",
+      "imputation_type": "With Imputation",
+      "value": "4996",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": "0-5",
+      "value": "1373",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": " 5-10",
+      "value": "1782",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": "10-20",
+      "value": "2112",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": "20-30",
+      "value": "2454",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": "30-40",
+      "value": "2768",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": "40-50",
+      "value": "3094",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": "50-60",
+      "value": "3455",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": "60-70",
+      "value": "3887",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": "70-80",
+      "value": "4458",
+      "unit": "\u20b9"
+    },
+    {
+      "year": "2022-23",
+      "state": "All India",
+      "indicator": "Average monthly per capita consumption expenditure (MPCE) Over 12 Fractile Classes",
+      "sector": "Rural",
+      "imputation_type": "Without Imputation",
+      "mpce_fractile_classes": "80-90",
+      "value": "5356",
+      "unit": "\u20b9"
+    }
+  ]
+}

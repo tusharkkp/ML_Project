@@ -1,0 +1,29 @@
+## **Problem Statement**
+
+**AI-Based Food Inflation Prediction and Household Affordability Monitoring System**
+
+The prices of essential food commodities such as rice, wheat, pulses, tomatoes, onions, potatoes, and cooking oil fluctuate frequently due to seasonal variations, supply-demand imbalances, market conditions, and other economic factors. These unpredictable price changes contribute to food inflation and disproportionately affect low- and middle-income households by increasing their monthly grocery expenses.
+
+Currently, households have limited access to intelligent tools that can forecast future commodity prices, identify abnormal price increases, compare prices across different markets, and estimate the impact of food inflation on their household budgets.
+
+The proposed system aims to develop an **AI-powered food inflation prediction and household affordability monitoring platform** that uses historical commodity price data and machine learning techniques to forecast future prices, detect unusual price fluctuations, analyze historical inflation trends, and compare commodity prices across different cities.
+
+Additionally, the system will provide a household food basket calculator and affordability analyzer to estimate monthly grocery expenses, measure food expenditure as a percentage of household income, and simulate the financial impact of predicted price increases.
+
+The objective is to provide data-driven insights and early warnings that help households understand changing food prices, plan their grocery budgets effectively, and make informed purchasing decisions.
+
+### **Key objectives**
+
+1. Develop machine learning models to predict future prices of essential food commodities.
+2. Detect abnormal price fluctuations using anomaly detection techniques.
+3. Analyze historical food inflation patterns and seasonal trends.
+4. Compare commodity prices across different cities and markets.
+5. Estimate monthly household grocery expenses using customizable food baskets.
+6. Analyze household affordability based on income, budget, and commodity prices.
+7. Generate early warnings about significant price increases and their potential impact on household expenses.
+
+### **Expected outcome**
+
+An interactive web-based platform that combines machine learning, time-series forecasting, and economic analysis to provide food price predictions, inflation alerts, city-wise comparisons, and household affordability insights.
+
+**Research focus:** Predicting food price fluctuations and understanding their potential impact on household affordability using historical commodity price data and machine learning.
