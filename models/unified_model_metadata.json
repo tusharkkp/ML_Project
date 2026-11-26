@@ -1,0 +1,174 @@
+{
+  "model_architecture": "Unified Cross-Commodity Regression Pipeline",
+  "champion_algorithm": "Ridge Regression (L2)",
+  "dataset_version": "v2.0.0-unified",
+  "training_timestamp": "2026-11-22 02:19:01",
+  "total_training_records": 3133,
+  "total_validation_records": 672,
+  "total_test_records": 675,
+  "supported_commodities": [
+    "Moong Dal",
+    "Onion",
+    "Sugar",
+    "Tomato"
+  ],
+  "supported_categories": [
+    "Pulses",
+    "Sugars & Sweets",
+    "Vegetables"
+  ],
+  "categorical_features": [
+    "commodity_name",
+    "category"
+  ],
+  "numeric_features": [
+    "price_lag_1",
+    "price_lag_3",
+    "price_lag_7",
+    "rolling_mean_7",
+    "rolling_std_7",
+    "rolling_min_7",
+    "rolling_max_7",
+    "price_momentum_7",
+    "daily_spread",
+    "arrival_tonnes",
+    "arrival_lag_1",
+    "rolling_arrival_mean_7",
+    "month",
+    "day_of_week",
+    "is_monsoon_season",
+    "is_perishable"
+  ],
+  "all_features": [
+    "commodity_name",
+    "category",
+    "price_lag_1",
+    "price_lag_3",
+    "price_lag_7",
+    "rolling_mean_7",
+    "rolling_std_7",
+    "rolling_min_7",
+    "rolling_max_7",
+    "price_momentum_7",
+    "daily_spread",
+    "arrival_tonnes",
+    "arrival_lag_1",
+    "rolling_arrival_mean_7",
+    "month",
+    "day_of_week",
+    "is_monsoon_season",
+    "is_perishable"
+  ],
+  "prediction_horizon": "t+1 trading session",
+  "price_unit": "Rs/Quintal (Wholesale) & Rs/Kg (Retail equivalent)",
+  "overall_test_metrics": {
+    "mae_rs_per_qtl": 65.97,
+    "rmse_rs_per_qtl": 194.64,
+    "r2_score": 0.9935,
+    "mape_pct": 6.65
+  },
+  "per_commodity_metrics": {
+    "Moong Dal": {
+      "category": "Pulses",
+      "mean_price_rs_per_qtl": 7013.95,
+      "test_mae_rs_per_qtl": 25.14,
+      "test_mae_rs_per_kg": 0.25,
+      "test_rmse_rs_per_qtl": 47.74,
+      "test_rmse_rs_per_kg": 0.48,
+      "test_r2": 0.9833,
+      "test_mape_pct": 0.36,
+      "sample_count": 129
+    },
+    "Onion": {
+      "category": "Vegetables",
+      "mean_price_rs_per_qtl": 909.19,
+      "test_mae_rs_per_qtl": 93.68,
+      "test_mae_rs_per_kg": 0.94,
+      "test_rmse_rs_per_qtl": 273.83,
+      "test_rmse_rs_per_kg": 2.74,
+      "test_r2": 0.477,
+      "test_mape_pct": 10.25,
+      "sample_count": 266
+    },
+    "Sugar": {
+      "category": "Sugars & Sweets",
+      "mean_price_rs_per_qtl": 3222.32,
+      "test_mae_rs_per_qtl": 40.98,
+      "test_mae_rs_per_kg": 0.41,
+      "test_rmse_rs_per_qtl": 177.63,
+      "test_rmse_rs_per_kg": 1.78,
+      "test_r2": 0.056,
+      "test_mape_pct": 1.1,
+      "sample_count": 124
+    },
+    "Tomato": {
+      "category": "Vegetables",
+      "mean_price_rs_per_qtl": 761.06,
+      "test_mae_rs_per_qtl": 72.34,
+      "test_mae_rs_per_kg": 0.72,
+      "test_rmse_rs_per_qtl": 95.46,
+      "test_rmse_rs_per_kg": 0.95,
+      "test_r2": 0.8384,
+      "test_mape_pct": 10.11,
+      "sample_count": 156
+    }
+  },
+  "all_models_benchmarked": [
+    {
+      "Model": "Multiple Linear Regression",
+      "MAE": 66.38,
+      "RMSE": 194.7,
+      "R2": 0.9934,
+      "MAPE": 6.61
+    },
+    {
+      "Model": "Ridge Regression (L2)",
+      "MAE": 65.97,
+      "RMSE": 194.64,
+      "R2": 0.9935,
+      "MAPE": 6.65
+    },
+    {
+      "Model": "Lasso Regression (L1)",
+      "MAE": 66.37,
+      "RMSE": 194.71,
+      "R2": 0.9934,
+      "MAPE": 6.62
+    },
+    {
+      "Model": "ElasticNet Regression",
+      "MAE": 79.93,
+      "RMSE": 198.47,
+      "R2": 0.9932,
+      "MAPE": 8.06
+    },
+    {
+      "Model": "Decision Tree Regressor",
+      "MAE": 125.9,
+      "RMSE": 230.8,
+      "R2": 0.9908,
+      "MAPE": 11.88
+    },
+    {
+      "Model": "Random Forest Regressor",
+      "MAE": 107.15,
+      "RMSE": 209.62,
+      "R2": 0.9924,
+      "MAPE": 10.64
+    },
+    {
+      "Model": "Gradient Boosting Regressor",
+      "MAE": 103.86,
+      "RMSE": 209.37,
+      "R2": 0.9924,
+      "MAPE": 10.08
+    },
+    {
+      "Model": "Support Vector Regressor",
+      "MAE": 149.0,
+      "RMSE": 271.98,
+      "R2": 0.9872,
+      "MAPE": 14.53
+    }
+  ]
+}

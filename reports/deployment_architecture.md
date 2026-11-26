@@ -190,3 +190,24 @@ CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
    The household food basket and affordability analyzer executes purely deterministic formulas ($\text{Cost} = \sum P_i Q_i$). It never retrains or mutates the machine learning model.
 3. **Reproducibility Guarantee:**
    The model test script `scripts/inference_test.py` proves that any system running Python 3.12 with `scikit-learn==1.9.1` and `joblib==1.6.0` can load the saved artifact and produce identical floating-point forecasts.
+
+---
+
+## 5. Streamlit Web Dashboard & Cloud Deployment on Hugging Face Spaces
+
+To satisfy **Practical Examination Rubric Component H (6 Marks)** with live demonstration capability, the system includes a complete production Streamlit web application:
+
+1. **Application Entrypoint (`app.py`):**
+   - Pure Python interactive web dashboard combining:
+     - **Module 1:** Multi-Commodity Wholesale & Retail Forecaster (Universal Model & Crop Specialists).
+     - **Module 2:** Household Affordability & Engel's Law Vulnerability Monitor (NSSO 2022-23 fractiles).
+     - **Module 3:** Model Benchmarks & Syllabus Metrics (Tables, loss curves, ROC-AUC, PCA).
+     - **Module 4:** Academic Viva Guide & Evaluation Rubric (Top 10 questions with answers).
+2. **Local Execution:**
+   ```bash
+   streamlit run app.py
+   ```
+3. **Hugging Face Spaces Cloud Deployment:**
+   - Free cloud hosting using Streamlit SDK on Hugging Face Spaces (CPU Basic, 2 vCPUs, 16 GB RAM).
+   - Deployment configuration and step-by-step instructions: [`deployment/huggingface/deployment_guide.md`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/deployment/huggingface/deployment_guide.md).
+   - Live public URL allows examiners to interactively test arbitrary price scenarios on any device.

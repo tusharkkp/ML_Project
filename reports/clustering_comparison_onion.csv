@@ -1,0 +1,4 @@
+Model,Silhouette,Davies-Bouldin
+K-Means (k=2),0.448,1.1697
+"Hierarchical (Ward, k=2)",0.4622,1.1577
+DBSCAN (clusters=3),0.4639,0.7547

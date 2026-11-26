@@ -1,0 +1,150 @@
+{
+  "project": "AI-Based Food Inflation Prediction and Household Affordability Monitoring System",
+  "model_name": "Lasso Regression (L1)",
+  "artifact_file": "price_prediction_model.joblib",
+  "preprocessing_pipeline": "preprocessing_pipeline.joblib",
+  "training_date": "2026-11-22 01:53:10",
+  "dataset_version": "v2.0.0",
+  "dataset_source": "AGMARKNET Pune APMC Mandi Daily Series",
+  "commodity": "Tomato",
+  "market": "Pune APMC",
+  "district": "Pune",
+  "state": "Maharashtra",
+  "target_variable": "target_price_t_plus_1",
+  "target_definition": "Modal wholesale price on the next active APMC mandi trading session (Rs/Quintal)",
+  "prediction_horizon": "1 active trading session ahead (t+1)",
+  "feature_names": [
+    "price_lag_1",
+    "price_lag_3",
+    "price_lag_7",
+    "rolling_mean_7",
+    "rolling_std_7",
+    "rolling_min_7",
+    "rolling_max_7",
+    "price_momentum_7",
+    "daily_spread",
+    "arrival_tonnes",
+    "arrival_lag_1",
+    "rolling_arrival_mean_7",
+    "month",
+    "day_of_week",
+    "is_monsoon_season"
+  ],
+  "feature_count": 15,
+  "training_samples": 883,
+  "test_samples": 156,
+  "test_evaluation_metrics": {
+    "Model": "Lasso Regression (L1)",
+    "MAE": 68.66,
+    "MSE": 8715.15,
+    "RMSE": 93.35,
+    "R2": 0.8454,
+    "MAPE (%)": 9.36
+  },
+  "all_models_evaluated": [
+    {
+      "Model": "Naive Persistence Baseline",
+      "MAE": 83.17,
+      "MSE": 12568.11,
+      "RMSE": 112.11,
+      "R2": 0.7771,
+      "MAPE (%)": 11.25
+    },
+    {
+      "Model": "Simple Linear Regression",
+      "MAE": 89.35,
+      "MSE": 13008.63,
+      "RMSE": 114.06,
+      "R2": 0.7693,
+      "MAPE (%)": 12.76
+    },
+    {
+      "Model": "Multiple Linear Regression",
+      "MAE": 69.66,
+      "MSE": 8851.71,
+      "RMSE": 94.08,
+      "R2": 0.843,
+      "MAPE (%)": 9.47
+    },
+    {
+      "Model": "Polynomial Regression (deg=2)",
+      "MAE": 95.4,
+      "MSE": 14712.71,
+      "RMSE": 121.3,
+      "R2": 0.739,
+      "MAPE (%)": 13.18
+    },
+    {
+      "Model": "Ridge Regression (L2)",
+      "MAE": 69.32,
+      "MSE": 8799.0,
+      "RMSE": 93.8,
+      "R2": 0.8439,
+      "MAPE (%)": 9.44
+    },
+    {
+      "Model": "Lasso Regression (L1)",
+      "MAE": 68.66,
+      "MSE": 8715.15,
+      "RMSE": 93.35,
+      "R2": 0.8454,
+      "MAPE (%)": 9.36
+    },
+    {
+      "Model": "Decision Tree Regressor",
+      "MAE": 120.84,
+      "MSE": 25226.34,
+      "RMSE": 158.83,
+      "R2": 0.5526,
+      "MAPE (%)": 17.14
+    },
+    {
+      "Model": "KNN Regressor (k=7)",
+      "MAE": 178.59,
+      "MSE": 49008.54,
+      "RMSE": 221.38,
+      "R2": 0.1307,
+      "MAPE (%)": 27.14
+    },
+    {
+      "Model": "SVR (RBF Kernel)",
+      "MAE": 141.78,
+      "MSE": 33914.26,
+      "RMSE": 184.16,
+      "R2": 0.3985,
+      "MAPE (%)": 22.22
+    },
+    {
+      "Model": "Bagging Regressor",
+      "MAE": 90.71,
+      "MSE": 14220.06,
+      "RMSE": 119.25,
+      "R2": 0.7478,
+      "MAPE (%)": 12.95
+    },
+    {
+      "Model": "AdaBoost Regressor",
+      "MAE": 122.53,
+      "MSE": 26154.57,
+      "RMSE": 161.72,
+      "R2": 0.5361,
+      "MAPE (%)": 17.35
+    },
+    {
+      "Model": "Stacking Regressor",
+      "MAE": 70.43,
+      "MSE": 8941.07,
+      "RMSE": 94.56,
+      "R2": 0.8414,
+      "MAPE (%)": 9.5
+    },
+    {
+      "Model": "Voting Regressor",
+      "MAE": 75.48,
+      "MSE": 10063.29,
+      "RMSE": 100.32,
+      "R2": 0.8215,
+      "MAPE (%)": 10.44
+    }
+  ]
+}

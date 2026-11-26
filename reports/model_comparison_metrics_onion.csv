@@ -1,0 +1,14 @@
+Model,MAE,MSE,RMSE,R2,MAPE (%)
+Naive Persistence Baseline,97.7,36603.62,191.32,0.2518,9.45
+Simple Linear Regression,96.75,34929.67,186.89,0.286,9.48
+Multiple Linear Regression,87.78,33702.0,183.58,0.3111,8.62
+Polynomial Regression (deg=2),99.39,34935.76,186.91,0.2859,9.34
+Ridge Regression (L2),87.49,33567.57,183.21,0.3139,8.6
+Lasso Regression (L1),87.13,33454.63,182.91,0.3162,8.55
+Decision Tree Regressor,323.12,162271.4,402.83,-2.3169,32.66
+KNN Regressor (k=7),161.96,54684.26,233.85,-0.1178,15.66
+SVR (RBF Kernel),92.68,32062.67,179.06,0.3446,9.1
+Bagging Regressor,184.92,63920.09,252.82,-0.3066,19.03
+AdaBoost Regressor,122.98,42581.28,206.35,0.1296,12.4
+Stacking Regressor,88.69,34162.24,184.83,0.3017,8.7
+Voting Regressor,200.77,75979.21,275.64,-0.553,19.97

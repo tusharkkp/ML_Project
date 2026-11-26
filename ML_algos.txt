@@ -1,0 +1,35 @@
+you can only use these algorithms for this project 
+try to use all algos in the ML project
+
+
+Regression
+[ ] Simple Linear Regression
+[ ] Multiple Linear Regression
+[ ] Polynomial Regression
+[ ] Ridge Regression
+[ ] Lasso Regression
+
+Classification
+[ ] Logistic Regression
+[ ] Naive Bayes
+[ ] KNN
+[ ] Decision Tree (CART)
+[ ] SVM
+
+Ensemble Learning
+[ ] Bagging
+[ ] Boosting
+[ ] Stacking
+[ ] AdaBoost
+[ ] Voting Classifier
+
+Clustering & Unsupervised Learning
+[ ] K-Means
+[ ] Hierarchical Clustering
+[ ] Density-Based Clustering
+
+Dimensionality Reduction
+[ ] PCA
+Gradient Descent	Optimization Algorithm
+Stochastic Gradient Descent (SGD)	Optimization Algorithm
+Mini-batch Gradient Descent	Optimization Algorithm

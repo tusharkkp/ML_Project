@@ -1,12 +1,12 @@
 {
   "project": "AI-Based Food Inflation Prediction and Household Affordability Monitoring System",
-  "model_name": "MultipleLinearRegression",
+  "model_name": "SVR (RBF Kernel)",
   "artifact_file": "price_prediction_model.joblib",
   "preprocessing_pipeline": "preprocessing_pipeline.joblib",
-  "training_date": "2026-11-17 23:03:42",
-  "dataset_version": "v1.0.0",
-  "dataset_source": "AGMARKNET Pune APMC Mandi Daily Series (2016-2018)",
-  "commodity": "Tomato",
+  "training_date": "2026-11-22 01:53:52",
+  "dataset_version": "v2.0.0",
+  "dataset_source": "AGMARKNET Pune APMC Mandi Daily Series",
+  "commodity": "Onion",
   "market": "Pune APMC",
   "district": "Pune",
   "state": "Maharashtra",
@@ -31,66 +31,120 @@
     "is_monsoon_season"
   ],
   "feature_count": 15,
-  "training_samples": 741,
-  "test_samples": 132,
-  "best_hyperparameters": {
-    "fit_intercept": true
-  },
+  "training_samples": 855,
+  "test_samples": 152,
   "test_evaluation_metrics": {
-    "Model": "Multiple Linear Regression",
-    "MAE": 79.35,
-    "MSE": 12021.23,
-    "RMSE": 109.64,
-    "R2": 0.7723,
-    "MAPE (%)": 12.18
+    "Model": "SVR (RBF Kernel)",
+    "MAE": 92.68,
+    "MSE": 32062.67,
+    "RMSE": 179.06,
+    "R2": 0.3446,
+    "MAPE (%)": 9.1
   },
   "all_models_evaluated": [
     {
       "Model": "Naive Persistence Baseline",
-      "MAE": 70.45,
-      "MSE": 13106.06,
-      "RMSE": 114.48,
-      "R2": 0.7518,
-      "MAPE (%)": 10.64
+      "MAE": 97.7,
+      "MSE": 36603.62,
+      "RMSE": 191.32,
+      "R2": 0.2518,
+      "MAPE (%)": 9.45
+    },
+    {
+      "Model": "Simple Linear Regression",
+      "MAE": 96.75,
+      "MSE": 34929.67,
+      "RMSE": 186.89,
+      "R2": 0.286,
+      "MAPE (%)": 9.48
     },
     {
       "Model": "Multiple Linear Regression",
-      "MAE": 79.35,
-      "MSE": 12021.23,
-      "RMSE": 109.64,
-      "R2": 0.7723,
-      "MAPE (%)": 12.18
+      "MAE": 87.78,
+      "MSE": 33702.0,
+      "RMSE": 183.58,
+      "R2": 0.3111,
+      "MAPE (%)": 8.62
     },
     {
-      "Model": "Polynomial Regression (deg=1)",
-      "MAE": 79.35,
-      "MSE": 12020.83,
-      "RMSE": 109.64,
-      "R2": 0.7723,
-      "MAPE (%)": 12.18
+      "Model": "Polynomial Regression (deg=2)",
+      "MAE": 99.39,
+      "MSE": 34935.76,
+      "RMSE": 186.91,
+      "R2": 0.2859,
+      "MAPE (%)": 9.34
     },
     {
-      "Model": "Decision Tree (depth=5)",
-      "MAE": 84.72,
-      "MSE": 15599.3,
-      "RMSE": 124.9,
-      "R2": 0.7045,
-      "MAPE (%)": 12.71
+      "Model": "Ridge Regression (L2)",
+      "MAE": 87.49,
+      "MSE": 33567.57,
+      "RMSE": 183.21,
+      "R2": 0.3139,
+      "MAPE (%)": 8.6
     },
     {
-      "Model": "Random Forest Ensemble",
-      "MAE": 85.95,
-      "MSE": 14544.99,
-      "RMSE": 120.6,
-      "R2": 0.7245,
-      "MAPE (%)": 12.63
+      "Model": "Lasso Regression (L1)",
+      "MAE": 87.13,
+      "MSE": 33454.63,
+      "RMSE": 182.91,
+      "R2": 0.3162,
+      "MAPE (%)": 8.55
+    },
+    {
+      "Model": "Decision Tree Regressor",
+      "MAE": 323.12,
+      "MSE": 162271.4,
+      "RMSE": 402.83,
+      "R2": -2.3169,
+      "MAPE (%)": 32.66
+    },
+    {
+      "Model": "KNN Regressor (k=7)",
+      "MAE": 161.96,
+      "MSE": 54684.26,
+      "RMSE": 233.85,
+      "R2": -0.1178,
+      "MAPE (%)": 15.66
+    },
+    {
+      "Model": "SVR (RBF Kernel)",
+      "MAE": 92.68,
+      "MSE": 32062.67,
+      "RMSE": 179.06,
+      "R2": 0.3446,
+      "MAPE (%)": 9.1
+    },
+    {
+      "Model": "Bagging Regressor",
+      "MAE": 184.92,
+      "MSE": 63920.09,
+      "RMSE": 252.82,
+      "R2": -0.3066,
+      "MAPE (%)": 19.03
+    },
+    {
+      "Model": "AdaBoost Regressor",
+      "MAE": 122.98,
+      "MSE": 42581.28,
+      "RMSE": 206.35,
+      "R2": 0.1296,
+      "MAPE (%)": 12.4
+    },
+    {
+      "Model": "Stacking Regressor",
+      "MAE": 88.69,
+      "MSE": 34162.24,
+      "RMSE": 184.83,
+      "R2": 0.3017,
+      "MAPE (%)": 8.7
+    },
+    {
+      "Model": "Voting Regressor",
+      "MAE": 200.77,
+      "MSE": 75979.21,
+      "RMSE": 275.64,
+      "R2": -0.553,
+      "MAPE (%)": 19.97
     }
-  ],
-  "dependencies": {
-    "python": "3.12.10",
-    "scikit-learn": "1.9.1",
-    "joblib": "1.6.0",
-    "pandas": "3.0.6",
-    "numpy": "2.5.3"
-  }
+  ]
 }

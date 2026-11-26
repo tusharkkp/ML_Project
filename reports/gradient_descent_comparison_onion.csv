@@ -1,0 +1,4 @@
+Model,MAE,MSE,RMSE,R2,MAPE (%)
+Batch Gradient Descent,89.06,33922.22,184.18,0.3066,8.8
+Stochastic Gradient Descent,86.46,33114.57,181.97,0.3231,8.55
+Mini-batch GD (batch=32),87.28,33485.21,182.99,0.3155,8.58
