@@ -138,16 +138,19 @@ def evaluate_affordability(monthly_income, sector, family_size, q_cereal, p_cere
     ]
 
     res = calculate_household_affordability(monthly_income=monthly_income, basket_items=basket, sector=sector)
-    share = res["current_food_budget_share_pct"]
+    share = res.get("current_food_budget_share_pct", 0.0)
     bench = NSSO_BENCHMARKS["Urban_Average_Food_Share_Pct"] if sector.lower() == "urban" else NSSO_BENCHMARKS["Rural_Average_Food_Share_Pct"]
+    basket_cost = res.get("current_food_basket_cost_rs", res.get("total_food_basket_cost_current_rs", 0.0))
+    disc_funds = res.get("discretionary_income_remaining_rs", max(0.0, monthly_income - basket_cost))
+    status_label = res.get("affordability_status") or res.get("affordability_classification", "Moderate Vulnerability")
 
     result_text = (
         f"### Household Economic Vulnerability Assessment\n\n"
         f"- **Monthly Household Earnings:** ₹ {monthly_income:,.2f}\n"
-        f"- **Total Monthly Food Basket Cost:** ₹ {res['current_food_basket_cost_rs']:,.2f}\n"
+        f"- **Total Monthly Food Basket Cost:** ₹ {basket_cost:,.2f}\n"
         f"- **Food Budget Share:** **{share:.2f}%** of income\n"
-        f"- **Remaining Discretionary Funds:** ₹ {res['discretionary_income_remaining_rs']:,.2f}\n"
-        f"- **Vulnerability Classification (Engel's Law):** **{res['affordability_status']}**\n"
+        f"- **Remaining Discretionary Funds:** ₹ {disc_funds:,.2f}\n"
+        f"- **Vulnerability Classification (Engel's Law):** **{status_label}**\n"
         f"- **National {sector} Average Benchmark (NSSO 2022-23):** {bench:.1f}%\n"
     )
 

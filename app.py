@@ -415,8 +415,8 @@ elif app_mode == "🛒 Household Affordability & Engel's Law":
 
     st.subheader("📊 Household Vulnerability Assessment")
 
-    share = res_afford["current_food_budget_share_pct"]
-    status_label = res_afford["affordability_status"]
+    share = res_afford.get("current_food_budget_share_pct", 0.0)
+    status_label = res_afford.get("affordability_status") or res_afford.get("affordability_classification", "Moderate Vulnerability")
 
     # Status alert
     if share > 60.0:
@@ -426,13 +426,16 @@ elif app_mode == "🛒 Household Affordability & Engel's Law":
     else:
         st.markdown(f'<div class="status-alert status-normal">✅ {status_label}: Food spending is comfortably managed ({share:.1f}% of income).</div>', unsafe_allow_html=True)
 
+    basket_cost = res_afford.get("current_food_basket_cost_rs", res_afford.get("total_food_basket_cost_current_rs", 0.0))
+    disc_income = res_afford.get("discretionary_income_remaining_rs", max(0.0, monthly_income - basket_cost))
+
     a1, a2, a3, a4 = st.columns(4)
     with a1:
-        st.metric("Total Monthly Food Basket", f"₹ {res_afford['current_food_basket_cost_rs']:,.2f}")
+        st.metric("Total Monthly Food Basket", f"₹ {basket_cost:,.2f}")
     with a2:
         st.metric("Food Budget Share (%)", f"{share:.2f} %")
     with a3:
-        st.metric("Discretionary Balance Left", f"₹ {res_afford['discretionary_income_remaining_rs']:,.2f}")
+        st.metric("Discretionary Balance Left", f"₹ {disc_income:,.2f}")
     with a4:
         st.metric("NSSO Sector Baseline", f"{baseline_bench:.1f} %")
 

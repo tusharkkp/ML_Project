@@ -96,16 +96,24 @@ def calculate_household_affordability(
     else:
         alert = "STABLE: Commodity prices are forecasted to remain within normal baseline bounds."
 
+    status = classify_affordability(current_share_pct)
+    discretionary_income = round(monthly_income - total_current_cost, 2)
+
     return {
         "household_id": household_id,
         "monthly_income_rs": round(monthly_income, 2),
         "total_food_basket_cost_current_rs": round(total_current_cost, 2),
+        "current_food_basket_cost_rs": round(total_current_cost, 2),
         "total_food_basket_cost_predicted_rs": round(total_predicted_cost, 2) if has_predictions else None,
+        "predicted_food_basket_cost_rs": round(total_predicted_cost, 2) if has_predictions else None,
+        "discretionary_income_remaining_rs": discretionary_income,
         "current_food_budget_share_pct": round(current_share_pct, 2),
         "predicted_food_budget_share_pct": round(predicted_share_pct, 2) if predicted_share_pct else None,
-        "affordability_classification": classify_affordability(current_share_pct),
+        "affordability_classification": status,
+        "affordability_status": status,
         "nsso_benchmark_reference": benchmark_ref,
         "monthly_inflation_impact_rs": diff_rs,
+        "net_cost_increase_rs": diff_rs,
         "vulnerability_alert": alert,
         "item_breakdown": item_breakdown
     }
