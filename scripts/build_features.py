@@ -1,360 +1,261 @@
 """
-Multi-Commodity Feature Engineering Pipeline
-Generates model-ready datasets for ANY commodity from wholesale_prices.csv + market_arrivals.csv.
+Leak-Free Multi-Commodity Feature Engineering Pipeline.
+
+Builds model-ready datasets for exact canonical (commodity, market) pairs from
+data/processed/wholesale_prices.csv and data/processed/market_arrivals.csv.
+
+Guarantees:
+- Exact market matching by default (no silent combining of Pune & Pune(Pimpri) or
+  Lasalgaon & Lasalgaon(Niphad)).
+- Separate lag/rolling calculation per (commodity, market) series.
+- Shared chronological cutoff dates with target-date boundary purging across
+  Train -> Validation -> Test partitions.
 
 Usage:
+  py -3.12 scripts/build_features.py --all
+  py -3.12 scripts/build_features.py --unified
   py -3.12 scripts/build_features.py --commodity Tomato --market Pune
-  py -3.12 scripts/build_features.py --commodity Onion --market Pune
-  py -3.12 scripts/build_features.py --all  (builds for all viable commodity-market pairs)
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
 import pandas as pd
-import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.features import (
+    CANONICAL_SERIES_SPECS,
+    COMMODITY_CATEGORY_MAP,
+    canonicalize_commodity_name,
+    engineer_single_series_features,
+    split_chronologically_with_purging,
+)
 
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 
 
-def load_wholesale_series(commodity: str, market_keyword: str) -> pd.DataFrame:
-    """Load and filter wholesale price series for a given commodity and market."""
+def load_wholesale_series(
+    commodity: str,
+    market: str,
+    allow_submarket_aggregation: bool = False,
+) -> pd.DataFrame:
+    """
+    Load wholesale price time series for an exact (commodity, market) pair.
+
+    Args:
+        commodity: Commodity name (e.g. 'Tomato', 'Onion', 'Moong Dal', 'Sugar').
+        market: Exact APMC market name (e.g. 'Pune', 'Lasalgaon', 'Mumbai').
+        allow_submarket_aggregation: Must remain False unless explicitly opting into
+            documented submarket aggregation (never silent).
+    """
     ws = pd.read_csv(PROCESSED_DIR / "wholesale_prices.csv")
-    # Filter commodity (exact match)
-    mask = ws['commodity_name'].str.lower() == commodity.lower()
-    sub = ws[mask].copy()
-    if len(sub) == 0:
-        raise ValueError(f"No wholesale records found for commodity '{commodity}'")
-    
-    # Filter market
-    market_mask = sub['market_name'].str.contains(market_keyword, case=False, na=False)
-    sub = sub[market_mask].copy()
-    if len(sub) == 0:
-        raise ValueError(f"No records for '{commodity}' in market '{market_keyword}'")
-    
-    sub['observation_date'] = pd.to_datetime(sub['observation_date'])
-    sub = sub.sort_values('observation_date').reset_index(drop=True)
-    
-    # Aggregate multiple sub-markets (e.g. Pune, Pune(Pimpri)) to daily median
-    daily = sub.groupby('observation_date').agg({
-        'min_price_rs_per_qtl': 'min',
-        'max_price_rs_per_qtl': 'max',
-        'modal_price_rs_per_qtl': 'median',
-        'commodity_name': 'first',
-        'state': 'first',
-        'district': 'first',
-        'market_name': 'first',
-        'variety': 'first',
-        'price_unit': 'first',
-        'price_type': 'first',
-        'data_source': 'first'
-    }).reset_index()
-    
+    ws["canonical_commodity"] = ws["commodity_name"].apply(canonicalize_commodity_name)
+
+    target_canon = canonicalize_commodity_name(commodity).lower()
+    comm_mask = (
+        (ws["canonical_commodity"].str.lower() == target_canon)
+        | (ws["commodity_name"].str.lower() == commodity.strip().lower())
+    )
+    sub = ws[comm_mask].copy()
+    if sub.empty:
+        raise ValueError(f"No wholesale records found for commodity '{commodity}'.")
+
+    if allow_submarket_aggregation:
+        mkt_mask = sub["market_name"].str.contains(market, case=False, na=False)
+        sub = sub[mkt_mask].copy()
+        explicit_market_label = f"{market}_Submarkets_Aggregated"
+    else:
+        mkt_mask = sub["market_name"].str.strip().str.lower() == market.strip().lower()
+        sub = sub[mkt_mask].copy()
+        explicit_market_label = market.strip()
+
+    if sub.empty:
+        available = sorted(ws[comm_mask]["market_name"].dropna().unique().tolist())
+        raise ValueError(
+            f"No exact records for '{commodity}' in market '{market}'. "
+            f"Sample available markets: {available[:10]}"
+        )
+
+    sub["observation_date"] = pd.to_datetime(sub["observation_date"])
+    sub = sub.sort_values("observation_date").reset_index(drop=True)
+
+    # Aggregate within the exact market if multiple varieties reported on same date
+    daily = (
+        sub.groupby("observation_date", as_index=False)
+        .agg(
+            {
+                "min_price_rs_per_qtl": "min",
+                "max_price_rs_per_qtl": "max",
+                "modal_price_rs_per_qtl": "median",
+                "state": "first",
+                "district": "first",
+                "price_unit": "first",
+                "price_type": "first",
+                "data_source": "first",
+                "is_anomalous_flag": "max",
+            }
+        )
+    )
+    daily["commodity_name"] = canonicalize_commodity_name(commodity)
+    daily["market_name"] = explicit_market_label
+    daily["is_anomalous_flag"] = daily["is_anomalous_flag"].astype(bool)
     return daily
 
 
-def load_arrivals(commodity: str, market_keyword: str) -> pd.DataFrame:
-    """Load market arrivals data if available."""
+def load_arrivals(
+    commodity: str,
+    market: str,
+    allow_submarket_aggregation: bool = False,
+) -> pd.DataFrame:
+    """Load exact market-level arrivals series if present."""
     arrivals_path = PROCESSED_DIR / "market_arrivals.csv"
     if not arrivals_path.exists():
         return pd.DataFrame()
-    
+
     ma = pd.read_csv(arrivals_path)
-    mask = ma['commodity_name'].str.lower() == commodity.lower()
-    sub = ma[mask].copy()
-    
-    market_mask = sub['market_name'].str.contains(market_keyword, case=False, na=False)
-    sub = sub[market_mask].copy()
-    
-    if len(sub) == 0:
+    ma["canonical_commodity"] = ma["commodity_name"].apply(canonicalize_commodity_name)
+    target_canon = canonicalize_commodity_name(commodity).lower()
+    comm_mask = (
+        (ma["canonical_commodity"].str.lower() == target_canon)
+        | (ma["commodity_name"].str.lower() == commodity.strip().lower())
+    )
+    sub = ma[comm_mask].copy()
+    if sub.empty:
         return pd.DataFrame()
-    
-    sub['observation_date'] = pd.to_datetime(sub['observation_date'])
-    daily = sub.groupby('observation_date').agg({
-        'arrival_quantity_tonnes': 'sum'
-    }).reset_index()
-    
-    return daily
 
-
-def engineer_features(df: pd.DataFrame, has_arrivals: bool = True) -> pd.DataFrame:
-    """Engineer time-series features from price data. All lookback only (zero future leakage)."""
-    out = df.copy()
-    price_col = 'modal_price_rs_per_qtl'
-    
-    # Price lag features (backward only)
-    out['price_lag_1'] = out[price_col].shift(1)
-    out['price_lag_3'] = out[price_col].shift(3)
-    out['price_lag_7'] = out[price_col].shift(7)
-    
-    # Rolling window statistics (backward only)
-    out['rolling_mean_7'] = out[price_col].shift(1).rolling(window=7, min_periods=4).mean()
-    out['rolling_std_7'] = out[price_col].shift(1).rolling(window=7, min_periods=4).std()
-    out['rolling_min_7'] = out[price_col].shift(1).rolling(window=7, min_periods=4).min()
-    out['rolling_max_7'] = out[price_col].shift(1).rolling(window=7, min_periods=4).max()
-    
-    # Price momentum and volatility indicators
-    out['price_momentum_7'] = out[price_col] - out[price_col].shift(7)
-    out['daily_spread'] = out['max_price_rs_per_qtl'] - out['min_price_rs_per_qtl']
-    
-    # Supply-side features (arrivals)
-    if has_arrivals and 'arrival_quantity_tonnes' in out.columns:
-        out['arrival_tonnes'] = out['arrival_quantity_tonnes']
-        out['arrival_lag_1'] = out['arrival_tonnes'].shift(1)
-        out['rolling_arrival_mean_7'] = out['arrival_tonnes'].shift(1).rolling(window=7, min_periods=4).mean()
+    if allow_submarket_aggregation:
+        mkt_mask = sub["market_name"].str.contains(market, case=False, na=False)
     else:
-        out['arrival_tonnes'] = 0.0
-        out['arrival_lag_1'] = 0.0
-        out['rolling_arrival_mean_7'] = 0.0
-    
-    # Calendar features
-    out['month'] = out['observation_date'].dt.month
-    out['day_of_week'] = out['observation_date'].dt.dayofweek
-    out['day_of_year'] = out['observation_date'].dt.dayofyear
-    out['is_monsoon_season'] = out['month'].isin([6, 7, 8, 9]).astype(int)
-    
-    # Target variables (future prices — only used as labels, never as features)
-    out['target_price_t_plus_1'] = out[price_col].shift(-1)
-    out['target_price_t_plus_7'] = out[price_col].shift(-7)
-    
-    # Classification target: price spike > 10% in next session
-    out['price_change_pct'] = ((out['target_price_t_plus_1'] - out[price_col]) / out[price_col]) * 100
-    out['is_price_spike'] = (out['price_change_pct'].abs() > 10).astype(int)
-    out['spike_direction'] = 'Normal'
-    out.loc[out['price_change_pct'] > 10, 'spike_direction'] = 'Surge'
-    out.loc[out['price_change_pct'] < -10, 'spike_direction'] = 'Crash'
-    
-    return out
+        mkt_mask = sub["market_name"].str.strip().str.lower() == market.strip().lower()
+    sub = sub[mkt_mask].copy()
+    if sub.empty:
+        return pd.DataFrame()
+
+    sub["observation_date"] = pd.to_datetime(sub["observation_date"])
+    return (
+        sub.groupby("observation_date", as_index=False)["arrival_quantity_tonnes"].sum()
+    )
 
 
-def add_split_tags(df: pd.DataFrame, train_frac=0.70, val_frac=0.15) -> pd.DataFrame:
-    """Add chronological train/validation/test split tags."""
-    n = len(df)
-    train_end = int(n * train_frac)
-    val_end = int(n * (train_frac + val_frac))
-    
-    df['split_tag'] = 'Test'
-    df.iloc[:train_end, df.columns.get_loc('split_tag')] = 'Train'
-    df.iloc[train_end:val_end, df.columns.get_loc('split_tag')] = 'Validation'
-    
-    return df
+def build_model_ready_dataset(
+    commodity: str,
+    market: str,
+    category: Optional[str] = None,
+    is_perishable: Optional[int] = None,
+    allow_submarket_aggregation: bool = False,
+) -> pd.DataFrame:
+    """Build leak-free feature dataset for one canonical (commodity, market) series."""
+    prices = load_wholesale_series(
+        commodity, market, allow_submarket_aggregation=allow_submarket_aggregation
+    )
+    arrivals = load_arrivals(
+        commodity, market, allow_submarket_aggregation=allow_submarket_aggregation
+    )
 
-
-def build_model_ready_dataset(commodity: str, market_keyword: str) -> pd.DataFrame:
-    """Full pipeline: load → merge arrivals → engineer features → split → clean."""
-    print(f"\n{'='*60}")
-    print(f"Building features for: {commodity} @ {market_keyword}")
-    print(f"{'='*60}")
-    
-    # Load wholesale prices
-    prices = load_wholesale_series(commodity, market_keyword)
-    print(f"  Wholesale price records: {len(prices)}")
-    print(f"  Date range: {prices['observation_date'].min()} to {prices['observation_date'].max()}")
-    
-    # Load arrivals
-    arrivals = load_arrivals(commodity, market_keyword)
-    has_arrivals = len(arrivals) > 0
+    has_arrivals = not arrivals.empty
     if has_arrivals:
-        prices = prices.merge(arrivals, on='observation_date', how='left')
-        prices['arrival_quantity_tonnes'] = prices['arrival_quantity_tonnes'].fillna(0)
-        print(f"  Arrivals merged: {(prices['arrival_quantity_tonnes'] > 0).sum()} days with arrival data")
+        prices = prices.merge(arrivals, on="observation_date", how="left")
+        prices["arrival_quantity_tonnes"] = prices["arrival_quantity_tonnes"].fillna(0.0)
     else:
-        print(f"  WARNING: No arrival data available for {commodity} @ {market_keyword}")
-    
-    # Engineer features
-    featured = engineer_features(prices, has_arrivals)
-    
-    # Drop rows with NaN in key feature/target columns
-    feature_cols = [
-        'price_lag_1', 'price_lag_3', 'price_lag_7',
-        'rolling_mean_7', 'rolling_std_7', 'rolling_min_7', 'rolling_max_7',
-        'price_momentum_7', 'daily_spread', 'arrival_tonnes', 'arrival_lag_1',
-        'rolling_arrival_mean_7', 'month', 'day_of_week', 'is_monsoon_season'
-    ]
-    
-    # Must have target
-    featured = featured.dropna(subset=['target_price_t_plus_1'] + feature_cols)
-    featured = featured.reset_index(drop=True)
-    
-    # Add chronological split tags
-    featured = add_split_tags(featured)
-    
-    print(f"  Model-ready records: {len(featured)}")
-    train_n = (featured['split_tag'] == 'Train').sum()
-    val_n = (featured['split_tag'] == 'Validation').sum()
-    test_n = (featured['split_tag'] == 'Test').sum()
-    print(f"  Split: Train={train_n}, Validation={val_n}, Test={test_n}")
-    
-    return featured
+        prices["arrival_quantity_tonnes"] = 0.0
+
+    # Restrict strictly to primary continuous historical window where dense daily data exists
+    # (prevents single isolated 2026-11-17 API snapshot from creating an 8-year session gap)
+    featured = engineer_single_series_features(
+        prices,
+        has_arrivals=has_arrivals,
+        max_target_gap_days=45,
+        max_lookback_gap_days=60,
+        drop_incomplete=True,
+    )
+
+    canon = canonicalize_commodity_name(commodity)
+    default_cat, default_perish = COMMODITY_CATEGORY_MAP.get(canon, ("Other", 1))
+    featured["commodity_name"] = canon
+    featured["category"] = category if category is not None else default_cat
+    featured["is_perishable"] = int(is_perishable if is_perishable is not None else default_perish)
+
+    split_df, _ = split_chronologically_with_purging(featured, train_frac=0.70, val_frac=0.15)
+    return split_df
 
 
-def save_dataset(df: pd.DataFrame, commodity: str, market: str):
-    """Save model-ready dataset to processed directory."""
-    safe_commodity = commodity.lower().replace(' ', '_').replace('(', '').replace(')', '')
-    safe_market = market.lower().replace(' ', '_')
-    filename = f"model_ready_{safe_market}_{safe_commodity}.csv"
-    path = PROCESSED_DIR / filename
+def save_dataset(df: pd.DataFrame, commodity: str, market: str) -> Path:
+    """Persist per-series feature store CSV."""
+    safe_comm = commodity.lower().replace(" ", "_").replace("(", "").replace(")", "")
+    safe_mkt = market.lower().replace(" ", "_")
+    path = PROCESSED_DIR / f"model_ready_{safe_mkt}_{safe_comm}.csv"
     df.to_csv(path, index=False)
-    print(f"  Saved: {path} ({len(df)} rows)")
+    print(f"  Saved {path.name}: {len(df)} rows | splits={df['split_tag'].value_counts().to_dict()}")
     return path
 
 
-# Viable commodity-market pairs with sufficient historical data
-VIABLE_PAIRS = [
-    ("Tomato", "Pune"),
-    ("Onion", "Pune"),
-    ("Onion", "Lasalgaon"),
-]
+def build_unified_dataset() -> Tuple[Path, Path, Dict[str, str]]:
+    """
+    Build the canonical unified multi-commodity dataset across all 5 validated
+    exact single-market series using shared chronological cutoffs and boundary purging.
+    """
+    print("=" * 72)
+    print("BUILDING LEAK-FREE UNIFIED MULTI-COMMODITY FEATURE STORE")
+    print("=" * 72)
 
+    series_frames: List[pd.DataFrame] = []
+    for spec in CANONICAL_SERIES_SPECS:
+        df_series = build_model_ready_dataset(
+            commodity=str(spec["commodity_name"]),
+            market=str(spec["market_name"]),
+            category=str(spec["category"]),
+            is_perishable=int(spec["is_perishable"]),
+            allow_submarket_aggregation=False,
+        )
+        # Save exact per-series dataset as well so specialist & unified stay 100% consistent
+        save_dataset(df_series, str(spec["commodity_name"]), str(spec["market_name"]))
+        series_frames.append(df_series)
 
-def build_unified_dataset() -> Path:
-    """Build unified cross-commodity dataset spanning vegetables, pulses, and sweets."""
-    print(f"\n{'='*60}")
-    print("Building Unified Multi-Commodity Dataset")
-    print(f"{'='*60}")
+    pooled = pd.concat(series_frames, ignore_index=True)
 
-    dfs = []
+    # Drop any old independent split tags and apply SHARED chronological cutoffs + boundary purging
+    unified, split_meta = split_chronologically_with_purging(
+        pooled.drop(columns=["split_tag"], errors="ignore"),
+        train_frac=0.70,
+        val_frac=0.15,
+    )
 
-    # 1. Tomato Pune
-    tom_path = PROCESSED_DIR / "model_ready_pune_tomato.csv"
-    if not tom_path.exists():
-        df_tom = build_model_ready_dataset("Tomato", "Pune")
-        save_dataset(df_tom, "Tomato", "Pune")
-    else:
-        df_tom = pd.read_csv(tom_path)
-    df_tom["commodity_name"] = "Tomato"
-    df_tom["category"] = "Vegetables"
-    df_tom["is_perishable"] = 1
-    dfs.append(df_tom)
-    print(f"  Loaded Tomato: {len(df_tom)} rows")
+    clean_path = PROCESSED_DIR / "model_ready_unified_commodities_clean.csv"
+    legacy_path = PROCESSED_DIR / "model_ready_unified_commodities.csv"
+    unified.to_csv(clean_path, index=False)
+    unified.to_csv(legacy_path, index=False)
 
-    # 2. Onion Pune
-    oni_path = PROCESSED_DIR / "model_ready_pune_onion.csv"
-    if not oni_path.exists():
-        df_oni = build_model_ready_dataset("Onion", "Pune")
-        save_dataset(df_oni, "Onion", "Pune")
-    else:
-        df_oni = pd.read_csv(oni_path)
-    df_oni["commodity_name"] = "Onion"
-    df_oni["category"] = "Vegetables"
-    df_oni["is_perishable"] = 1
-    dfs.append(df_oni)
-    print(f"  Loaded Onion (Pune): {len(df_oni)} rows")
-
-    # 3. Onion Lasalgaon
-    las_path = PROCESSED_DIR / "model_ready_lasalgaon_onion.csv"
-    if not las_path.exists():
-        df_las = build_model_ready_dataset("Onion", "Lasalgaon")
-        save_dataset(df_las, "Onion", "Lasalgaon")
-    else:
-        df_las = pd.read_csv(las_path)
-    df_las["commodity_name"] = "Onion"
-    df_las["category"] = "Vegetables"
-    df_las["is_perishable"] = 1
-    dfs.append(df_las)
-    print(f"  Loaded Onion (Lasalgaon): {len(df_las)} rows")
-
-    # 4. Sugar & Moong Dal from wholesale_prices.csv
-    ws_path = PROCESSED_DIR / "wholesale_prices.csv"
-    if ws_path.exists():
-        ws = pd.read_csv(ws_path)
-        ws['observation_date'] = pd.to_datetime(ws['observation_date'])
-
-        # Sugar
-        sub_sug = ws[ws['commodity_name'] == 'Sugar'].sort_values('observation_date')
-        if len(sub_sug) > 100:
-            daily_sug = sub_sug.groupby('observation_date').agg({
-                'min_price_rs_per_qtl': 'min',
-                'max_price_rs_per_qtl': 'max',
-                'modal_price_rs_per_qtl': 'median',
-                'commodity_name': 'first',
-                'market_name': 'first'
-            }).reset_index()
-            feat_sug = engineer_features(daily_sug, has_arrivals=False)
-            feat_sug = feat_sug.dropna(subset=['target_price_t_plus_1', 'price_lag_7']).reset_index(drop=True)
-            feat_sug = add_split_tags(feat_sug)
-            feat_sug['commodity_name'] = 'Sugar'
-            feat_sug['category'] = 'Sugars & Sweets'
-            feat_sug['is_perishable'] = 0
-            dfs.append(feat_sug)
-            print(f"  Loaded Sugar: {len(feat_sug)} rows")
-
-        # Moong Dal
-        sub_moong = ws[ws['commodity_name'] == 'Green Gram Dal (Moong Dal)'].sort_values('observation_date')
-        if len(sub_moong) > 100:
-            daily_moong = sub_moong.groupby('observation_date').agg({
-                'min_price_rs_per_qtl': 'min',
-                'max_price_rs_per_qtl': 'max',
-                'modal_price_rs_per_qtl': 'median',
-                'commodity_name': 'first',
-                'market_name': 'first'
-            }).reset_index()
-            feat_moong = engineer_features(daily_moong, has_arrivals=False)
-            feat_moong = feat_moong.dropna(subset=['target_price_t_plus_1', 'price_lag_7']).reset_index(drop=True)
-            feat_moong = add_split_tags(feat_moong)
-            feat_moong['commodity_name'] = 'Moong Dal'
-            feat_moong['category'] = 'Pulses'
-            feat_moong['is_perishable'] = 0
-            dfs.append(feat_moong)
-            print(f"  Loaded Moong Dal: {len(feat_moong)} rows")
-
-    unified = pd.concat(dfs, ignore_index=True)
-    out_csv = PROCESSED_DIR / "model_ready_unified_commodities.csv"
-    unified.to_csv(out_csv, index=False)
-    print(f"  Saved unified dataset: {out_csv} ({len(unified)} total rows)")
-    return out_csv
+    print(f"\nUnified Feature Store Saved: {clean_path.name} (and synchronized {legacy_path.name})")
+    print(f"  Total Rows (after boundary purge): {len(unified)}")
+    print(f"  Purged Cross-Boundary Rows       : {split_meta.get('purged_boundary_rows', 0)}")
+    print(f"  Train Cutoffs      : {split_meta['train_dates']}")
+    print(f"  Validation Cutoffs : {split_meta['validation_dates']}")
+    print(f"  Test Cutoffs       : {split_meta['test_dates']}")
+    print(f"  Split Counts       : {unified['split_tag'].value_counts().to_dict()}")
+    print("=" * 72)
+    return clean_path, legacy_path, split_meta
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Multi-commodity feature engineering pipeline.")
-    parser.add_argument("--commodity", type=str, help="Commodity name (e.g., Tomato, Onion)")
-    parser.add_argument("--market", type=str, help="Market keyword (e.g., Pune, Lasalgaon)")
-    parser.add_argument("--all", action="store_true", help="Build all viable commodity-market pairs")
-    parser.add_argument("--unified", action="store_true", help="Build unified multi-commodity pooled dataset")
+    parser = argparse.ArgumentParser(description="Leak-free multi-commodity feature builder.")
+    parser.add_argument("--commodity", type=str, help="Canonical commodity name (e.g. Tomato)")
+    parser.add_argument("--market", type=str, help="Exact market name (e.g. Pune)")
+    parser.add_argument("--all", action="store_true", help="Build all canonical series & unified store")
+    parser.add_argument("--unified", action="store_true", help="Build unified feature store")
     args = parser.parse_args()
-    
-    datasets_built = []
-    
-    if args.unified:
-        out_csv = build_unified_dataset()
-        print(f"Unified multi-commodity dataset ready at: {out_csv}")
-        return
 
-    if args.all:
-        for commodity, market in VIABLE_PAIRS:
-            try:
-                df = build_model_ready_dataset(commodity, market)
-                if len(df) >= 100:
-                    path = save_dataset(df, commodity, market)
-                    datasets_built.append((commodity, market, len(df), str(path)))
-                else:
-                    print(f"  SKIPPED: Only {len(df)} records (minimum 100 required)")
-            except Exception as e:
-                print(f"  ERROR for {commodity} @ {market}: {e}")
-        # Also build unified when --all is specified
+    if args.all or args.unified:
         build_unified_dataset()
     elif args.commodity and args.market:
         df = build_model_ready_dataset(args.commodity, args.market)
-        path = save_dataset(df, args.commodity, args.market)
-        datasets_built.append((args.commodity, args.market, len(df), str(path)))
+        save_dataset(df, args.commodity, args.market)
     else:
-        # Default: build Tomato Pune (backward compatible) and Onion Pune
-        for commodity, market in [("Tomato", "Pune"), ("Onion", "Pune")]:
-            try:
-                df = build_model_ready_dataset(commodity, market)
-                path = save_dataset(df, commodity, market)
-                datasets_built.append((commodity, market, len(df), str(path)))
-            except Exception as e:
-                print(f"  ERROR for {commodity} @ {market}: {e}")
-    
-    print(f"\n{'='*60}")
-    print(f"Feature Engineering Complete: {len(datasets_built)} datasets built")
-    for c, m, n, p in datasets_built:
-        print(f"  {c} @ {m}: {n} rows → {p}")
-    print(f"{'='*60}")
+        build_unified_dataset()
 
 
 if __name__ == "__main__":

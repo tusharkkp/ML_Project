@@ -1,15 +1,21 @@
 """
-Household Affordability & Food Basket Calculator
-Implements deterministic econometric affordability models based on NSSO HCES 2022-23 benchmarks.
+Household Affordability & Food Basket Calculator (Phase 8).
 
-Formulas:
-- Food Basket Cost = Sum of (Commodity Quantity * Commodity Retail Price)
-- Food Budget Share (%) = (Food Basket Cost / Monthly Household Income) * 100
+Implements deterministic econometric affordability calculations benchmarked against
+NSSO HCES 2022-23 cross-sectional consumer expenditure fractiles under Engel's Law.
+
+Strict Correctness Guarantees:
+- Rejects non-positive income, negative/NaN quantities, negative/NaN prices.
+- Never calculates or displays a "complete predicted food basket" unless EVERY item
+  in the basket has a valid predicted retail price; partial predictions remain flagged
+  explicitly as incomplete/unavailable.
+- Explicitly frames outputs as analytical estimates rather than official diagnoses.
 """
 
-from typing import List, Dict, Any, Optional
+import math
+from typing import Any, Dict, List, Optional
 
-# NSSO HCES 2022-23 Factsheet Benchmark Percentages
+
 NSSO_BENCHMARKS = {
     "Rural_Average_Food_Share_Pct": 46.38,
     "Urban_Average_Food_Share_Pct": 39.17,
@@ -19,118 +25,176 @@ NSSO_BENCHMARKS = {
     "Maharashtra_Urban_Average_MPCE_Rs": 6611.0,
 }
 
+
 def classify_affordability(food_budget_share_pct: float) -> str:
-    """Classifies household vulnerability based on the proportion of income allocated to food."""
+    """Classify analytical vulnerability tier based on food budget share (% of income)."""
     if food_budget_share_pct < 30.0:
-        return "Low Vulnerability (Food Secure — Engel Curve Top Quartile)"
+        return "Low Vulnerability (Analytical Estimate — Below 30% Tier)"
     elif food_budget_share_pct <= 45.0:
-        return "Moderate Vulnerability (Normal Middle-Income Range)"
+        return "Moderate Vulnerability (Analytical Estimate — Middle-Income Corridor)"
     elif food_budget_share_pct <= 60.0:
-        return "High Vulnerability (Food Insecure — Resembles Bottom 30% Fractile)"
+        return "High Vulnerability (Analytical Estimate — Near Bottom-20% HCES Tier)"
     else:
-        return "Critical Food Distress (Extreme Poverty / Severe Food Deprivation)"
+        return "Critical Vulnerability Pressure (Analytical Estimate — Above 60% Food Share)"
+
+
+def _validate_non_negative_finite(val: Any, field_name: str) -> float:
+    if val is None:
+        raise ValueError(f"{field_name} cannot be None.")
+    num = float(val)
+    if not math.isfinite(num) or num < 0.0:
+        raise ValueError(f"{field_name} must be a non-negative finite number (got {val}).")
+    return num
+
 
 def calculate_household_affordability(
     monthly_income: float,
     basket_items: List[Dict[str, Any]],
     sector: str = "Urban",
-    household_id: str = "HH-DEFAULT"
+    household_id: str = "HH-DEFAULT",
+    family_size: int = 4,
 ) -> Dict[str, Any]:
     """
-    Computes deterministic food basket cost and evaluates economic affordability.
-
-    Args:
-        monthly_income: Total monthly household earnings in Indian Rupees.
-        basket_items: List of dicts, each with 'commodity_name', 'monthly_quantity_kg',
-                      'current_retail_price_per_kg', and optional 'predicted_retail_price_per_kg'.
-        sector: 'Urban' or 'Rural'
-        household_id: Optional household reference identifier.
+    Compute deterministic current and (when complete) predicted monthly food basket cost
+    and budget share under Engel's Law against NSSO HCES 2022-23 cross-sectional benchmarks.
     """
-    if monthly_income <= 0:
+    income = float(monthly_income) if monthly_income is not None else -1.0
+    if not math.isfinite(income) or income <= 0.0:
         raise ValueError("Monthly income must be strictly positive.")
+    if not basket_items:
+        raise ValueError("Basket must contain at least one commodity item.")
+    if int(family_size) < 1:
+        raise ValueError("Family size must be at least 1.")
 
     total_current_cost = 0.0
     total_predicted_cost = 0.0
-    has_predictions = False
-
-    item_breakdown = []
+    items_with_predictions: List[str] = []
+    items_missing_predictions: List[str] = []
+    item_breakdown: List[Dict[str, Any]] = []
 
     for item in basket_items:
-        qty = float(item["monthly_quantity_kg"])
-        p_curr = float(item["current_retail_price_per_kg"])
+        name = str(item.get("commodity_name", "Unknown")).strip()
+        qty = _validate_non_negative_finite(
+            item.get("monthly_quantity_kg"), f"Quantity for '{name}'"
+        )
+        p_curr = _validate_non_negative_finite(
+            item.get("current_retail_price_per_kg"), f"Current retail price for '{name}'"
+        )
         item_curr_cost = qty * p_curr
         total_current_cost += item_curr_cost
 
-        item_pred_cost = None
-        if "predicted_retail_price_per_kg" in item and item["predicted_retail_price_per_kg"] is not None:
-            has_predictions = True
-            p_pred = float(item["predicted_retail_price_per_kg"])
+        raw_pred = item.get("predicted_retail_price_per_kg")
+        item_pred_cost: Optional[float] = None
+        if raw_pred is not None:
+            p_pred = _validate_non_negative_finite(
+                raw_pred, f"Predicted retail price for '{name}'"
+            )
             item_pred_cost = qty * p_pred
             total_predicted_cost += item_pred_cost
+            items_with_predictions.append(name)
+        else:
+            items_missing_predictions.append(name)
 
-        item_breakdown.append({
-            "commodity_name": item["commodity_name"],
-            "monthly_quantity_kg": qty,
-            "current_retail_price_per_kg": p_curr,
-            "current_cost_rs": round(item_curr_cost, 2),
-            "predicted_retail_price_per_kg": item.get("predicted_retail_price_per_kg"),
-            "predicted_cost_rs": round(item_pred_cost, 2) if item_pred_cost else None
-        })
+        item_breakdown.append(
+            {
+                "commodity_name": name,
+                "monthly_quantity_kg": qty,
+                "current_retail_price_per_kg": round(p_curr, 2),
+                "current_cost_rs": round(item_curr_cost, 2),
+                "predicted_retail_price_per_kg": round(float(raw_pred), 2) if raw_pred is not None else None,
+                "predicted_cost_rs": round(item_pred_cost, 2) if item_pred_cost is not None else None,
+                "prediction_source": item.get("prediction_source", "Provided" if raw_pred is not None else "Unavailable"),
+            }
+        )
 
-    # Calculate Food Budget Shares
-    current_share_pct = (total_current_cost / monthly_income) * 100.0
-    predicted_share_pct = ((total_predicted_cost / monthly_income) * 100.0) if has_predictions else None
+    # Strictly require predictions for ALL basket items before reporting predicted basket totals
+    has_complete_predictions = (len(items_missing_predictions) == 0) and (len(basket_items) > 0)
+    has_partial_predictions = (len(items_with_predictions) > 0) and (len(items_missing_predictions) > 0)
 
-    # Benchmark comparison
-    benchmark_ref = (
-        f"NSSO 2022-23 {sector} Baseline Average Food Share is "
-        f"{NSSO_BENCHMARKS['Urban_Average_Food_Share_Pct'] if sector.lower()=='urban' else NSSO_BENCHMARKS['Rural_Average_Food_Share_Pct']}%"
-    )
-
-    # Inflation shock differential
-    diff_rs = round(total_predicted_cost - total_current_cost, 2) if has_predictions else None
-    if diff_rs and diff_rs > 0:
-        alert = f"WARNING: Predicted commodity price increases will inflate monthly grocery expenses by Rs. {diff_rs:,.2f} (+{predicted_share_pct - current_share_pct:.2f}% of income)."
-    elif diff_rs and diff_rs < 0:
-        alert = f"FAVORABLE: Predicted commodity price drops will reduce monthly grocery expenses by Rs. {abs(diff_rs):,.2f}."
+    if has_complete_predictions:
+        prediction_status = "complete"
+    elif has_partial_predictions:
+        prediction_status = "incomplete_partial_predictions"
     else:
-        alert = "STABLE: Commodity prices are forecasted to remain within normal baseline bounds."
+        prediction_status = "unavailable"
 
-    status = classify_affordability(current_share_pct)
-    discretionary_income = round(monthly_income - total_current_cost, 2)
+    current_share_pct = (total_current_cost / income) * 100.0
+    discretionary_income = round(income - total_current_cost, 2)
+    curr_status = classify_affordability(current_share_pct)
+
+    if has_complete_predictions:
+        pred_cost_rounded = round(total_predicted_cost, 2)
+        pred_share_pct = round((total_predicted_cost / income) * 100.0, 2)
+        pred_status_label = classify_affordability(pred_share_pct)
+        pred_discretionary = round(income - total_predicted_cost, 2)
+        diff_rs = round(total_predicted_cost - total_current_cost, 2)
+        share_delta = round(pred_share_pct - current_share_pct, 2)
+        if diff_rs > 0:
+            alert = (
+                f"WARNING (Analytical Projection): Projected price increases would raise the monthly basket "
+                f"by Rs. {diff_rs:,.2f} ({share_delta:+.2f} percentage points of income)."
+            )
+        elif diff_rs < 0:
+            alert = (
+                f"FAVORABLE (Analytical Projection): Projected price declines would reduce the monthly basket "
+                f"by Rs. {abs(diff_rs):,.2f} ({share_delta:+.2f} percentage points of income)."
+            )
+        else:
+            alert = "STABLE (Analytical Projection): Projected food basket cost matches current baseline."
+    else:
+        pred_cost_rounded = None
+        pred_share_pct = None
+        pred_status_label = None
+        pred_discretionary = None
+        diff_rs = None
+        share_delta = None
+        if has_partial_predictions:
+            alert = (
+                f"PREDICTED BASKET INCOMPLETE: Validated retail price predictions are missing for "
+                f"{items_missing_predictions}. Complete predicted basket cost is withheld to avoid undercounting."
+            )
+        else:
+            alert = "PREDICTED BASKET UNAVAILABLE: Supply current or complete predicted retail prices for all items."
+
+    sector_norm = "Urban" if sector.strip().lower() == "urban" else "Rural"
+    sector_ref_val = (
+        NSSO_BENCHMARKS["Urban_Average_Food_Share_Pct"]
+        if sector_norm == "Urban"
+        else NSSO_BENCHMARKS["Rural_Average_Food_Share_Pct"]
+    )
+    benchmark_ref = (
+        f"NSSO HCES 2022-23 {sector_norm} Cross-Sectional Average Food Share: {sector_ref_val}%"
+    )
 
     return {
         "household_id": household_id,
-        "monthly_income_rs": round(monthly_income, 2),
+        "sector": sector_norm,
+        "family_size": int(family_size),
+        "monthly_income_rs": round(income, 2),
+        "mpce_rs": round(income / int(family_size), 2),
         "total_food_basket_cost_current_rs": round(total_current_cost, 2),
         "current_food_basket_cost_rs": round(total_current_cost, 2),
-        "total_food_basket_cost_predicted_rs": round(total_predicted_cost, 2) if has_predictions else None,
-        "predicted_food_basket_cost_rs": round(total_predicted_cost, 2) if has_predictions else None,
+        "total_food_basket_cost_predicted_rs": pred_cost_rounded,
+        "predicted_food_basket_cost_rs": pred_cost_rounded,
         "discretionary_income_remaining_rs": discretionary_income,
+        "predicted_discretionary_income_rs": pred_discretionary,
         "current_food_budget_share_pct": round(current_share_pct, 2),
-        "predicted_food_budget_share_pct": round(predicted_share_pct, 2) if predicted_share_pct else None,
-        "affordability_classification": status,
-        "affordability_status": status,
+        "predicted_food_budget_share_pct": pred_share_pct,
+        "budget_share_change_pct_points": share_delta,
+        "affordability_classification": curr_status,
+        "affordability_status": curr_status,
+        "predicted_affordability_status": pred_status_label,
+        "has_complete_predictions": has_complete_predictions,
+        "prediction_status": prediction_status,
+        "missing_prediction_items": items_missing_predictions,
         "nsso_benchmark_reference": benchmark_ref,
+        "nsso_sector_baseline_pct": sector_ref_val,
         "monthly_inflation_impact_rs": diff_rs,
         "net_cost_increase_rs": diff_rs,
         "vulnerability_alert": alert,
-        "item_breakdown": item_breakdown
+        "methodology_disclaimer": (
+            "Analytical budget estimate calibrated against cross-sectional NSSO HCES 2022-23 survey fractiles; "
+            "this is NOT an official household poverty or clinical food-insecurity diagnosis."
+        ),
+        "item_breakdown": item_breakdown,
     }
-
-if __name__ == "__main__":
-    # Test case: Urban middle-income household in Pune (Income = Rs. 25,000/month)
-    sample_basket = [
-        {"commodity_name": "Rice", "monthly_quantity_kg": 20.0, "current_retail_price_per_kg": 45.0, "predicted_retail_price_per_kg": 46.5},
-        {"commodity_name": "Wheat (Atta)", "monthly_quantity_kg": 25.0, "current_retail_price_per_kg": 35.0, "predicted_retail_price_per_kg": 36.0},
-        {"commodity_name": "Tur Dal", "monthly_quantity_kg": 5.0, "current_retail_price_per_kg": 150.0, "predicted_retail_price_per_kg": 155.0},
-        {"commodity_name": "Tomato", "monthly_quantity_kg": 12.0, "current_retail_price_per_kg": 30.0, "predicted_retail_price_per_kg": 45.0}, # Monsoon shock
-        {"commodity_name": "Onion", "monthly_quantity_kg": 15.0, "current_retail_price_per_kg": 35.0, "predicted_retail_price_per_kg": 40.0},
-        {"commodity_name": "Potato", "monthly_quantity_kg": 12.0, "current_retail_price_per_kg": 25.0, "predicted_retail_price_per_kg": 26.0},
-        {"commodity_name": "Sunflower Oil", "monthly_quantity_kg": 4.0, "current_retail_price_per_kg": 140.0, "predicted_retail_price_per_kg": 142.0},
-        {"commodity_name": "Milk", "monthly_quantity_kg": 30.0, "current_retail_price_per_kg": 58.0, "predicted_retail_price_per_kg": 60.0},
-        {"commodity_name": "Sugar", "monthly_quantity_kg": 5.0, "current_retail_price_per_kg": 42.0, "predicted_retail_price_per_kg": 42.0}
-    ]
-    report = calculate_household_affordability(monthly_income=25000.0, basket_items=sample_basket, sector="Urban")
-    import json
-    print(json.dumps(report, indent=2))

@@ -1,19 +1,20 @@
 {
   "project": "AI-Based Food Inflation Prediction and Household Affordability Monitoring System",
-  "model_name": "SVR (RBF Kernel)",
-  "artifact_file": "price_prediction_model.joblib",
-  "preprocessing_pipeline": "preprocessing_pipeline.joblib",
-  "training_date": "2026-11-22 01:53:52",
-  "dataset_version": "v2.0.0",
+  "selection_protocol": "TimeSeriesSplit CV on Train -> Validation-Only Selection -> Refit Train+Val -> Single Test Eval",
+  "model_name": "Lasso Regression (L1)",
+  "artifact_file": "price_prediction_model_onion.joblib",
+  "training_date": "2026-11-27 23:59:04",
+  "dataset_version": "v3.0.0-leakfree",
   "dataset_source": "AGMARKNET Pune APMC Mandi Daily Series",
   "commodity": "Onion",
-  "market": "Pune APMC",
+  "market": "Pune",
   "district": "Pune",
   "state": "Maharashtra",
   "target_variable": "target_price_t_plus_1",
-  "target_definition": "Modal wholesale price on the next active APMC mandi trading session (Rs/Quintal)",
-  "prediction_horizon": "1 active trading session ahead (t+1)",
+  "target_definition": "Modal wholesale price on the next observed active APMC trading session (Rs/Quintal)",
+  "prediction_horizon": "Next observed active trading session (t+1, not guaranteed next calendar day)",
   "feature_names": [
+    "modal_price_rs_per_qtl",
     "price_lag_1",
     "price_lag_3",
     "price_lag_7",
@@ -30,121 +31,297 @@
     "day_of_week",
     "is_monsoon_season"
   ],
-  "feature_count": 15,
-  "training_samples": 855,
-  "test_samples": 152,
+  "feature_count": 16,
+  "training_samples": 601,
+  "validation_samples": 128,
+  "train_val_samples": 729,
+  "test_samples": 130,
   "test_evaluation_metrics": {
-    "Model": "SVR (RBF Kernel)",
-    "MAE": 92.68,
-    "MSE": 32062.67,
-    "RMSE": 179.06,
-    "R2": 0.3446,
-    "MAPE (%)": 9.1
+    "Model": "Lasso Regression (L1)",
+    "MAE": 76.88,
+    "MSE": 14712.45,
+    "RMSE": 121.29,
+    "R2": 0.6661,
+    "MAPE (%)": 8.96,
+    "Selected_By_Validation": true
   },
-  "all_models_evaluated": [
-    {
-      "Model": "Naive Persistence Baseline",
-      "MAE": 97.7,
-      "MSE": 36603.62,
-      "RMSE": 191.32,
-      "R2": 0.2518,
-      "MAPE (%)": 9.45
-    },
-    {
-      "Model": "Simple Linear Regression",
-      "MAE": 96.75,
-      "MSE": 34929.67,
-      "RMSE": 186.89,
-      "R2": 0.286,
-      "MAPE (%)": 9.48
-    },
-    {
-      "Model": "Multiple Linear Regression",
-      "MAE": 87.78,
-      "MSE": 33702.0,
-      "RMSE": 183.58,
-      "R2": 0.3111,
-      "MAPE (%)": 8.62
-    },
-    {
-      "Model": "Polynomial Regression (deg=2)",
-      "MAE": 99.39,
-      "MSE": 34935.76,
-      "RMSE": 186.91,
-      "R2": 0.2859,
-      "MAPE (%)": 9.34
-    },
-    {
-      "Model": "Ridge Regression (L2)",
-      "MAE": 87.49,
-      "MSE": 33567.57,
-      "RMSE": 183.21,
-      "R2": 0.3139,
-      "MAPE (%)": 8.6
-    },
+  "persistence_baseline_test_metrics": {
+    "Model": "Naive Persistence Baseline (P_t)",
+    "MAE": 74.62,
+    "MSE": 19307.69,
+    "RMSE": 138.95,
+    "R2": 0.5618,
+    "MAPE (%)": 8.32,
+    "Selected_By_Validation": false
+  },
+  "improvement_over_baseline_test": {
+    "rmse_reduction_rs_per_qtl": 17.66,
+    "mae_reduction_rs_per_qtl": -2.26,
+    "beats_baseline_rmse": true
+  },
+  "validation_leaderboard": [
     {
       "Model": "Lasso Regression (L1)",
-      "MAE": 87.13,
-      "MSE": 33454.63,
-      "RMSE": 182.91,
-      "R2": 0.3162,
-      "MAPE (%)": 8.55
-    },
-    {
-      "Model": "Decision Tree Regressor",
-      "MAE": 323.12,
-      "MSE": 162271.4,
-      "RMSE": 402.83,
-      "R2": -2.3169,
-      "MAPE (%)": 32.66
-    },
-    {
-      "Model": "KNN Regressor (k=7)",
-      "MAE": 161.96,
-      "MSE": 54684.26,
-      "RMSE": 233.85,
-      "R2": -0.1178,
-      "MAPE (%)": 15.66
-    },
-    {
-      "Model": "SVR (RBF Kernel)",
-      "MAE": 92.68,
-      "MSE": 32062.67,
-      "RMSE": 179.06,
-      "R2": 0.3446,
-      "MAPE (%)": 9.1
-    },
-    {
-      "Model": "Bagging Regressor",
-      "MAE": 184.92,
-      "MSE": 63920.09,
-      "RMSE": 252.82,
-      "R2": -0.3066,
-      "MAPE (%)": 19.03
-    },
-    {
-      "Model": "AdaBoost Regressor",
-      "MAE": 122.98,
-      "MSE": 42581.28,
-      "RMSE": 206.35,
-      "R2": 0.1296,
-      "MAPE (%)": 12.4
-    },
-    {
-      "Model": "Stacking Regressor",
-      "MAE": 88.69,
-      "MSE": 34162.24,
-      "RMSE": 184.83,
-      "R2": 0.3017,
-      "MAPE (%)": 8.7
+      "Val_MAE": 64.9,
+      "Val_MSE": 7740.37,
+      "Val_RMSE": 87.98,
+      "Val_R2": 0.8159,
+      "Val_MAPE (%)": 10.08,
+      "Best_Params": "{\"alpha\": 5.0}"
     },
     {
       "Model": "Voting Regressor",
-      "MAE": 200.77,
-      "MSE": 75979.21,
-      "RMSE": 275.64,
-      "R2": -0.553,
-      "MAPE (%)": 19.97
+      "Val_MAE": 63.06,
+      "Val_MSE": 8033.63,
+      "Val_RMSE": 89.63,
+      "Val_R2": 0.809,
+      "Val_MAPE (%)": 9.88,
+      "Best_Params": "{}"
+    },
+    {
+      "Model": "Gradient Boosting Regressor",
+      "Val_MAE": 61.87,
+      "Val_MSE": 8099.52,
+      "Val_RMSE": 90.0,
+      "Val_R2": 0.8074,
+      "Val_MAPE (%)": 9.69,
+      "Best_Params": "{\"learning_rate\": 0.1, \"max_depth\": 3, \"n_estimators\": 50}"
+    },
+    {
+      "Model": "Multiple Linear Regression",
+      "Val_MAE": 66.05,
+      "Val_MSE": 8136.75,
+      "Val_RMSE": 90.2,
+      "Val_R2": 0.8065,
+      "Val_MAPE (%)": 10.21,
+      "Best_Params": "{}"
+    },
+    {
+      "Model": "Ridge Regression (L2)",
+      "Val_MAE": 70.3,
+      "Val_MSE": 9332.78,
+      "Val_RMSE": 96.61,
+      "Val_R2": 0.7781,
+      "Val_MAPE (%)": 11.24,
+      "Best_Params": "{\"alpha\": 100.0}"
+    },
+    {
+      "Model": "Stacking Regressor",
+      "Val_MAE": 76.21,
+      "Val_MSE": 9557.45,
+      "Val_RMSE": 97.76,
+      "Val_R2": 0.7727,
+      "Val_MAPE (%)": 12.14,
+      "Best_Params": "{}"
+    },
+    {
+      "Model": "Simple Linear Regression",
+      "Val_MAE": 67.7,
+      "Val_MSE": 10064.96,
+      "Val_RMSE": 100.32,
+      "Val_R2": 0.7607,
+      "Val_MAPE (%)": 10.68,
+      "Best_Params": "{}"
+    },
+    {
+      "Model": "Random Forest Regressor",
+      "Val_MAE": 72.06,
+      "Val_MSE": 10469.21,
+      "Val_RMSE": 102.32,
+      "Val_R2": 0.751,
+      "Val_MAPE (%)": 11.23,
+      "Best_Params": "{\"max_depth\": 8, \"min_samples_leaf\": 2}"
+    },
+    {
+      "Model": "Bagging Regressor",
+      "Val_MAE": 71.11,
+      "Val_MSE": 10655.41,
+      "Val_RMSE": 103.23,
+      "Val_R2": 0.7466,
+      "Val_MAPE (%)": 11.1,
+      "Best_Params": "{}"
+    },
+    {
+      "Model": "AdaBoost Regressor",
+      "Val_MAE": 76.36,
+      "Val_MSE": 10873.03,
+      "Val_RMSE": 104.27,
+      "Val_R2": 0.7414,
+      "Val_MAPE (%)": 12.07,
+      "Best_Params": "{\"learning_rate\": 0.1, \"n_estimators\": 100}"
+    },
+    {
+      "Model": "Polynomial Regression (deg=2)",
+      "Val_MAE": 77.78,
+      "Val_MSE": 11246.64,
+      "Val_RMSE": 106.05,
+      "Val_R2": 0.7326,
+      "Val_MAPE (%)": 12.16,
+      "Best_Params": "{\"alpha\": 100.0}"
+    },
+    {
+      "Model": "Decision Tree Regressor",
+      "Val_MAE": 78.0,
+      "Val_MSE": 12168.87,
+      "Val_RMSE": 110.31,
+      "Val_R2": 0.7106,
+      "Val_MAPE (%)": 11.81,
+      "Best_Params": "{\"max_depth\": 4, \"min_samples_leaf\": 10}"
+    },
+    {
+      "Model": "SVR (RBF Kernel)",
+      "Val_MAE": 96.75,
+      "Val_MSE": 20863.97,
+      "Val_RMSE": 144.44,
+      "Val_R2": 0.5039,
+      "Val_MAPE (%)": 14.92,
+      "Best_Params": "{\"C\": 500.0, \"epsilon\": 10.0}"
+    },
+    {
+      "Model": "KNN Regressor",
+      "Val_MAE": 98.98,
+      "Val_MSE": 24136.72,
+      "Val_RMSE": 155.36,
+      "Val_R2": 0.426,
+      "Val_MAPE (%)": 14.44,
+      "Best_Params": "{\"n_neighbors\": 5}"
+    }
+  ],
+  "all_models_evaluated": [
+    {
+      "Model": "Naive Persistence Baseline (P_t)",
+      "MAE": 74.62,
+      "MSE": 19307.69,
+      "RMSE": 138.95,
+      "R2": 0.5618,
+      "MAPE (%)": 8.32,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Simple Linear Regression",
+      "MAE": 76.44,
+      "MSE": 18644.72,
+      "RMSE": 136.55,
+      "R2": 0.5768,
+      "MAPE (%)": 8.61,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Multiple Linear Regression",
+      "MAE": 75.8,
+      "MSE": 14458.09,
+      "RMSE": 120.24,
+      "R2": 0.6719,
+      "MAPE (%)": 8.82,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Polynomial Regression (deg=2)",
+      "MAE": 90.13,
+      "MSE": 16924.48,
+      "RMSE": 130.09,
+      "R2": 0.6159,
+      "MAPE (%)": 10.42,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Ridge Regression (L2)",
+      "MAE": 80.75,
+      "MSE": 15360.14,
+      "RMSE": 123.94,
+      "R2": 0.6514,
+      "MAPE (%)": 9.55,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Lasso Regression (L1)",
+      "MAE": 76.88,
+      "MSE": 14712.45,
+      "RMSE": 121.29,
+      "R2": 0.6661,
+      "MAPE (%)": 8.96,
+      "Selected_By_Validation": true
+    },
+    {
+      "Model": "Decision Tree Regressor",
+      "MAE": 86.11,
+      "MSE": 20023.83,
+      "RMSE": 141.51,
+      "R2": 0.5455,
+      "MAPE (%)": 9.36,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "KNN Regressor",
+      "MAE": 112.77,
+      "MSE": 25506.15,
+      "RMSE": 159.71,
+      "R2": 0.4211,
+      "MAPE (%)": 12.89,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "SVR (RBF Kernel)",
+      "MAE": 87.26,
+      "MSE": 18823.8,
+      "RMSE": 137.2,
+      "R2": 0.5728,
+      "MAPE (%)": 10.05,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Bagging Regressor",
+      "MAE": 84.72,
+      "MSE": 17995.76,
+      "RMSE": 134.15,
+      "R2": 0.5916,
+      "MAPE (%)": 9.48,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Random Forest Regressor",
+      "MAE": 82.78,
+      "MSE": 17233.15,
+      "RMSE": 131.28,
+      "R2": 0.6089,
+      "MAPE (%)": 9.32,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "AdaBoost Regressor",
+      "MAE": 85.79,
+      "MSE": 17320.36,
+      "RMSE": 131.61,
+      "R2": 0.6069,
+      "MAPE (%)": 9.57,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Gradient Boosting Regressor",
+      "MAE": 92.57,
+      "MSE": 21224.63,
+      "RMSE": 145.69,
+      "R2": 0.5183,
+      "MAPE (%)": 10.15,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Stacking Regressor",
+      "MAE": 81.23,
+      "MSE": 16041.75,
+      "RMSE": 126.66,
+      "R2": 0.6359,
+      "MAPE (%)": 9.42,
+      "Selected_By_Validation": false
+    },
+    {
+      "Model": "Voting Regressor",
+      "MAE": 75.0,
+      "MSE": 14694.21,
+      "RMSE": 121.22,
+      "R2": 0.6665,
+      "MAPE (%)": 8.69,
+      "Selected_By_Validation": false
     }
   ]
 }

@@ -1,73 +1,97 @@
 """
-Standalone Inference Test Script
-Verifies that models/price_prediction_model.joblib and models/model_metadata.json
-can be loaded independently and used for real-time inference without retraining.
+Verification Smoke Script for Leak-Free Specialist & Unified Inference (v3.0.0-leakfree).
+
+Tests:
+1. Specialist CommodityPricePredictor (16 features with current modal_price_rs_per_qtl).
+2. UnifiedCommodityPredictor on validated commodities & markets + EarlyWarningClassifier.
+3. Explicit rejection (UnsupportedCommodityError) on unseen commodity ("Potato").
+4. Retail ML unavailability notice and observed DCA reference.
 """
 
 import json
+import sys
 from pathlib import Path
-import joblib
-import pandas as pd
-import numpy as np
 
-MODELS_DIR = Path("models")
-model_path = MODELS_DIR / "price_prediction_model.joblib"
-metadata_path = MODELS_DIR / "model_metadata.json"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-assert model_path.exists(), f"Model file not found at {model_path}"
-assert metadata_path.exists(), f"Metadata file not found at {metadata_path}"
+from src.inference import (
+    CommodityPricePredictor,
+    UnifiedCommodityPredictor,
+    UnsupportedCommodityError,
+)
+from src.live_data import get_historical_latest_features
 
-# 1. Load Metadata
-with open(metadata_path, "r", encoding="utf-8") as f:
-    meta = json.load(f)
 
-print("=== LOADED MODEL METADATA ===")
-print(f"Model Name        : {meta['model_name']}")
-print(f"Commodity & Market: {meta['commodity']} ({meta['market']}, {meta['state']})")
-print(f"Target Variable   : {meta['target_variable']} ({meta['target_definition']})")
-print(f"Features Expected : {len(meta['feature_names'])} features")
-print(f"Test RMSE         : Rs. {meta['test_evaluation_metrics']['RMSE']}")
-print(f"Test R2           : {meta['test_evaluation_metrics']['R2']}")
+def run_smoke_verification():
+    print("=" * 80)
+    print("INFERENCE VERIFICATION TEST (v3.0.0-leakfree)")
+    print("=" * 80)
 
-# 2. Load Model Pipeline
-model = joblib.load(model_path)
-print("\nModel pipeline loaded successfully from joblib!")
+    # 1. Specialist Model Test (Tomato @ Pune)
+    spec_meta_path = PROJECT_ROOT / "models" / "model_metadata_tomato.json"
+    with open(spec_meta_path, "r", encoding="utf-8") as f:
+        spec_meta = json.load(f)
 
-# 3. Simulate an Unseen Input Vector (e.g. Current Market Observation)
-# Scenario: Tomato at Pune APMC Mandi on a Thursday in July
-sample_input = {
-    'price_lag_1': 1400.0,            # Today's modal price: Rs. 14.00/kg
-    'price_lag_3': 1250.0,            # 3 sessions ago: Rs. 12.50/kg
-    'price_lag_7': 1100.0,            # 7 sessions ago: Rs. 11.00/kg
-    'rolling_mean_7': 1280.0,         # 7-session moving average
-    'rolling_std_7': 120.0,           # Local standard deviation
-    'rolling_min_7': 1100.0,          # Weekly low
-    'rolling_max_7': 1400.0,          # Weekly high
-    'price_momentum_7': 300.0,        # Upward momentum (+Rs. 300/Qtl)
-    'daily_spread': 400.0,            # Max - Min intra-day auction spread
-    'arrival_tonnes': 145.0,          # Today's arrival volume
-    'arrival_lag_1': 160.0,           # Yesterday's arrival volume
-    'rolling_arrival_mean_7': 155.0,  # 7-day average arrival
-    'month': 7,                       # July (Peak monsoon month)
-    'day_of_week': 3,                 # Thursday
-    'is_monsoon_season': 1            # Monsoon indicator: True
-}
+    assert "target_definition" in spec_meta or "prediction_horizon" in spec_meta
+    print(f"Specialist Metadata Loaded : {spec_meta.get('model_name')} | Horizon: {spec_meta.get('prediction_horizon')}")
 
-# Convert to DataFrame ensuring exact feature order from metadata
-feature_order = meta['feature_names']
-input_df = pd.DataFrame([sample_input])[feature_order]
+    tomato_predictor = CommodityPricePredictor(models_dir=PROJECT_ROOT / "models", commodity="Tomato")
+    sample_specialist_features = {
+        "modal_price_rs_per_qtl": 1400.0,
+        "price_lag_1": 1350.0,
+        "price_lag_3": 1280.0,
+        "price_lag_7": 1150.0,
+        "rolling_mean_7": 1275.0,
+        "rolling_std_7": 82.4,
+        "rolling_min_7": 1150.0,
+        "rolling_max_7": 1400.0,
+        "price_momentum_7": ((1400.0 - 1150.0) / 1150.0) * 100.0,
+        "daily_spread": 250.0,
+        "arrival_tonnes": 118.0,
+        "arrival_lag_1": 125.0,
+        "rolling_arrival_mean_7": 122.0,
+        "month": 11,
+        "day_of_week": 2,
+        "is_monsoon_season": 0,
+    }
+    res_spec = tomato_predictor.predict_from_features(sample_specialist_features)
+    print(
+        f"[Specialist] Current={res_spec['current_modal_price_rs_per_qtl']} Rs/Qtl -> "
+        f"Next Trading Session={res_spec['predicted_next_session_rs_per_qtl']} Rs/Qtl "
+        f"(Wholesale Equiv={res_spec['wholesale_equiv_rs_per_kg']} Rs/Kg)"
+    )
 
-# Predict
-predicted_price = float(model.predict(input_df)[0])
+    # 2. Historical Replay + Unified Predictor + Early Warning Classifier
+    uni = UnifiedCommodityPredictor(models_dir=PROJECT_ROOT / "models")
+    print(f"\nUnified Supported Commodities : {uni.get_supported_commodities()}")
+    print(f"Unified Supported Pairs       : {uni.supported_pairs}")
 
-print("\n=== INFERENCE TEST EXECUTION ===")
-print("Input Market Observation Vector:")
-for k, v in sample_input.items():
-    print(f"  {k:<24}: {v}")
+    hist = get_historical_latest_features("Onion", "Lasalgaon")
+    res_uni = uni.predict_from_features(hist["features"])
+    ew = res_uni["early_warning_classifier"]
+    print(
+        f"\n[Unified Replay Onion @ Lasalgaon ({hist['observation_date']})]\n"
+        f"  Current Modal Price         : Rs. {res_uni['current_modal_price_rs_per_qtl']}/Qtl\n"
+        f"  Predicted Next Session      : Rs. {res_uni['predicted_next_session_rs_per_qtl']}/Qtl "
+        f"(Equiv Rs. {res_uni['wholesale_equiv_rs_per_kg']}/Kg)\n"
+        f"  Actual Archived Next Session: Rs. {hist['actual_next_price_rs_per_qtl']}/Qtl\n"
+        f"  Early-Warning Regime        : {ew['predicted_regime']} "
+        f"(Probs={ew['class_probabilities']}, Reliable={ew['is_reliable_early_warning']})\n"
+        f"  Retail ML Status            : {res_uni['retail_estimation_status']}"
+    )
 
-print("-" * 50)
-print(f"Observed Price Today (t)         : Rs. {sample_input['price_lag_1']:.2f} / Quintal (Rs. {sample_input['price_lag_1']/100:.2f} / Kg)")
-print(f"PREDICTED NEXT-SESSION PRICE (t+1): Rs. {predicted_price:.2f} / Quintal (Rs. {predicted_price/100:.2f} / Kg)")
-print(f"Predicted Daily Change            : Rs. {predicted_price - sample_input['price_lag_1']:+.2f} / Quintal")
-print("-" * 50)
-print("INFERENCE TEST PASSED: Model is fully standalone and deployment-ready!")
+    # 3. Unsupported Commodity Guard Verification
+    print("\n[Unsupported Commodity Guard Check: Potato]")
+    try:
+        uni.predict(commodity="Potato", market="Pune", modal_price=1200.0, allow_manual_approx=True)
+        raise AssertionError("Expected UnsupportedCommodityError for Potato was NOT raised!")
+    except UnsupportedCommodityError as exc:
+        print(f"  Properly blocked Potato with UnsupportedCommodityError:\n  {exc}")
+
+    print("\nALL INFERENCE VERIFICATION CHECKS PASSED.")
+
+
+if __name__ == "__main__":
+    run_smoke_verification()

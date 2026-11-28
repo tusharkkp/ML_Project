@@ -1,0 +1,5 @@
+Commodity,Category,Test_Samples,Mean_Price,MAE,MSE,RMSE,R2,MAPE_Pct,Baseline_MAE,Baseline_RMSE,Baseline_R2,RMSE_Improvement,Beats_Baseline
+Moong Dal,Pulses,123,7034.15,20.65,2047.63,45.25,0.9847,0.29,11.38,42.29,0.9866,-2.96,False
+Onion,Vegetables,228,867.5,75.72,14964.99,122.33,0.849,10.04,71.03,128.41,0.8336,6.08,True
+Sugar,Sugars & Sweets,121,3205.61,27.18,1266.33,35.59,0.817,0.85,17.83,31.52,0.8564,-4.07,False
+Tomato,Vegetables,131,706.87,78.11,11009.95,104.93,0.7905,12.25,69.47,113.58,0.7545,8.65,True

@@ -1,47 +1,86 @@
 """
-Unit Tests for Household Food Affordability & Engel's Law Engine
-Course: Third-Year B.Tech AIML Practical Examination (Rubric Component H)
+Tests for Household Affordability Validation, Complete-Basket Integrity, and Risk Tiers (Phase 8).
 """
 
+import math
 import pytest
-from src.affordability import calculate_household_affordability, classify_affordability, NSSO_BENCHMARKS
+
+from src.affordability import calculate_household_affordability, classify_affordability
 
 
-def test_classify_affordability_thresholds():
+def test_affordability_tiers_and_complete_basket():
     assert "Low Vulnerability" in classify_affordability(25.0)
-    assert "Moderate Vulnerability" in classify_affordability(40.0)
-    assert "High Vulnerability" in classify_affordability(55.0)
-    assert "Critical Food Distress" in classify_affordability(75.0)
+    assert "Moderate Vulnerability" in classify_affordability(38.0)
+    assert "High Vulnerability" in classify_affordability(52.0)
+    assert "Critical Vulnerability" in classify_affordability(65.0)
+
+    res = calculate_household_affordability(
+        monthly_income=10000.0,
+        basket_items=[
+            {
+                "commodity_name": "Tomato",
+                "monthly_quantity_kg": 10.0,
+                "current_retail_price_per_kg": 40.0,
+                "predicted_retail_price_per_kg": 50.0,
+            },
+            {
+                "commodity_name": "Onion",
+                "monthly_quantity_kg": 10.0,
+                "current_retail_price_per_kg": 30.0,
+                "predicted_retail_price_per_kg": 35.0,
+            },
+        ],
+        sector="Urban",
+    )
+    assert res["has_complete_predictions"] is True
+    assert res["prediction_status"] == "complete"
+    assert res["current_food_basket_cost_rs"] == 700.0
+    assert res["predicted_food_basket_cost_rs"] == 850.0
+    assert res["monthly_inflation_impact_rs"] == 150.0
+    assert res["current_food_budget_share_pct"] == 7.0
+    assert res["predicted_food_budget_share_pct"] == 8.5
 
 
-def test_calculate_household_affordability_keys():
-    basket = [
-        {"commodity_name": "Rice & Cereals", "monthly_quantity_kg": 20.0, "current_retail_price_per_kg": 38.0},
-        {"commodity_name": "Pulses (Moong Dal)", "monthly_quantity_kg": 4.0, "current_retail_price_per_kg": 74.0},
-        {"commodity_name": "Onion", "monthly_quantity_kg": 6.0, "current_retail_price_per_kg": 25.0},
-        {"commodity_name": "Tomato", "monthly_quantity_kg": 5.0, "current_retail_price_per_kg": 28.0},
-        {"commodity_name": "Sugar", "monthly_quantity_kg": 3.0, "current_retail_price_per_kg": 42.0},
-    ]
-
-    res = calculate_household_affordability(monthly_income=25000.0, basket_items=basket, sector="Urban")
-
-    # Verify both canonical and convenience alias keys exist
-    assert "affordability_status" in res
-    assert "affordability_classification" in res
-    assert "current_food_basket_cost_rs" in res
-    assert "total_food_basket_cost_current_rs" in res
-    assert "discretionary_income_remaining_rs" in res
-    assert "current_food_budget_share_pct" in res
-
-    # Verify math accuracy
-    # Total cost = 20*38 (760) + 4*74 (296) + 6*25 (150) + 5*28 (140) + 3*42 (126) = 1472.0
-    expected_cost = 760.0 + 296.0 + 150.0 + 140.0 + 126.0
-    assert res["current_food_basket_cost_rs"] == pytest.approx(expected_cost, 0.01)
-    assert res["discretionary_income_remaining_rs"] == pytest.approx(25000.0 - expected_cost, 0.01)
-    assert res["current_food_budget_share_pct"] == pytest.approx((expected_cost / 25000.0) * 100.0, 0.01)
+def test_partial_predicted_basket_withholds_future_totals():
+    res = calculate_household_affordability(
+        monthly_income=12000.0,
+        basket_items=[
+            {
+                "commodity_name": "Tomato",
+                "monthly_quantity_kg": 10.0,
+                "current_retail_price_per_kg": 40.0,
+                "predicted_retail_price_per_kg": 55.0,
+            },
+            {
+                "commodity_name": "Onion",
+                "monthly_quantity_kg": 10.0,
+                "current_retail_price_per_kg": 35.0,
+                "predicted_retail_price_per_kg": None,
+            },
+        ],
+    )
+    assert res["has_complete_predictions"] is False
+    assert res["prediction_status"] == "incomplete_partial_predictions"
+    assert res["missing_prediction_items"] == ["Onion"]
+    assert res["predicted_food_basket_cost_rs"] is None
+    assert res["predicted_affordability_status"] is None
 
 
-def test_invalid_income_raises_value_error():
-    basket = [{"commodity_name": "Tomato", "monthly_quantity_kg": 5.0, "current_retail_price_per_kg": 28.0}]
-    with pytest.raises(ValueError):
-        calculate_household_affordability(monthly_income=0, basket_items=basket)
+def test_invalid_inputs_raise_value_error():
+    valid_item = [{"commodity_name": "Tomato", "monthly_quantity_kg": 5.0, "current_retail_price_per_kg": 40.0}]
+    with pytest.raises(ValueError, match="strictly positive"):
+        calculate_household_affordability(monthly_income=0.0, basket_items=valid_item)
+    with pytest.raises(ValueError, match="strictly positive"):
+        calculate_household_affordability(monthly_income=-5000.0, basket_items=valid_item)
+    with pytest.raises(ValueError, match="at least one commodity"):
+        calculate_household_affordability(monthly_income=15000.0, basket_items=[])
+    with pytest.raises(ValueError, match="non-negative finite"):
+        calculate_household_affordability(
+            monthly_income=15000.0,
+            basket_items=[{"commodity_name": "Tomato", "monthly_quantity_kg": float("nan"), "current_retail_price_per_kg": 40.0}],
+        )
+    with pytest.raises(ValueError, match="non-negative finite"):
+        calculate_household_affordability(
+            monthly_income=15000.0,
+            basket_items=[{"commodity_name": "Tomato", "monthly_quantity_kg": 5.0, "current_retail_price_per_kg": -10.0}],
+        )

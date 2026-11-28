@@ -1,0 +1,208 @@
+{
+  "model_architecture": "Multi-Commodity Price Shock Classifier (3-Class: Normal / Surge / Crash)",
+  "selection_protocol": "TimeSeriesSplit CV on Train -> Validation-Only Selection -> Refit Train+Val -> Single Test Eval",
+  "champion_algorithm": "Logistic Regression (Balanced)",
+  "champion_hyperparameters": {
+    "C": 10.0
+  },
+  "classes": [
+    "Normal",
+    "Surge",
+    "Crash"
+  ],
+  "spike_definition": "Surge: next-session change > +10% | Crash: next-session change < -10% | Normal: within [-10%, +10%]",
+  "features": [
+    "commodity_name",
+    "category",
+    "market_name",
+    "modal_price_rs_per_qtl",
+    "price_lag_1",
+    "price_lag_3",
+    "price_lag_7",
+    "rolling_mean_7",
+    "rolling_std_7",
+    "rolling_min_7",
+    "rolling_max_7",
+    "price_momentum_7",
+    "daily_spread",
+    "arrival_tonnes",
+    "arrival_lag_1",
+    "rolling_arrival_mean_7",
+    "month",
+    "day_of_week",
+    "is_monsoon_season",
+    "is_perishable"
+  ],
+  "training_timestamp": "2026-11-27 23:59:57",
+  "dataset_file": "model_ready_unified_commodities_clean.csv",
+  "class_distribution": {
+    "Train": {
+      "Normal": 2186,
+      "Surge": 319,
+      "Crash": 295
+    },
+    "Validation": {
+      "Normal": 478,
+      "Surge": 60,
+      "Crash": 57
+    },
+    "Test": {
+      "Normal": 471,
+      "Surge": 68,
+      "Crash": 64
+    }
+  },
+  "majority_class_baseline": {
+    "class": "Normal",
+    "val_accuracy": 0.8034,
+    "test_accuracy": 0.7811
+  },
+  "test_metrics": {
+    "accuracy": 0.6003,
+    "macro_precision": 0.5193,
+    "macro_recall": 0.6171,
+    "macro_f1": 0.4946,
+    "weighted_f1": 0.6589,
+    "roc_auc_ovr_macro": 0.8219,
+    "pr_auc_macro": 0.5703,
+    "any_spike_roc_auc": 0.8117,
+    "any_spike_pr_auc": 0.4293
+  },
+  "per_class_test_report": {
+    "Normal": {
+      "precision": 0.9893238434163701,
+      "recall": 0.5902335456475584,
+      "f1-score": 0.7393617021276596,
+      "support": 471.0
+    },
+    "Surge": {
+      "precision": 0.23529411764705882,
+      "recall": 0.8235294117647058,
+      "f1-score": 0.3660130718954248,
+      "support": 68.0
+    },
+    "Crash": {
+      "precision": 0.3333333333333333,
+      "recall": 0.4375,
+      "f1-score": 0.3783783783783784,
+      "support": 64.0
+    },
+    "accuracy": 0.6003316749585407,
+    "macro avg": {
+      "precision": 0.519317098132254,
+      "recall": 0.6170876524707548,
+      "f1-score": 0.4945843841338209,
+      "support": 603.0
+    },
+    "weighted avg": {
+      "precision": 0.8346680988100227,
+      "recall": 0.6003316749585407,
+      "f1-score": 0.6589460477731887,
+      "support": 603.0
+    }
+  },
+  "confusion_matrix_labels": [
+    "Normal",
+    "Surge",
+    "Crash"
+  ],
+  "confusion_matrix": [
+    [
+      278,
+      147,
+      46
+    ],
+    [
+      2,
+      56,
+      10
+    ],
+    [
+      1,
+      35,
+      28
+    ]
+  ],
+  "is_reliable_early_warning": false,
+  "reliability_status": "Experimental / Low Reliability Classifier: Predicting exact single-session >10% surges/crashes from historical price & arrival lags alone yields weak precision due to unrecorded exogenous weather/policy shocks. Present strictly as experimental alongside regression alerts.",
+  "validation_leaderboard": [
+    {
+      "Model": "Logistic Regression (Balanced)",
+      "accuracy": 0.6487,
+      "macro_precision": 0.5378,
+      "macro_recall": 0.6769,
+      "macro_f1": 0.5377,
+      "weighted_f1": 0.701,
+      "roc_auc_ovr_macro": 0.8432,
+      "pr_auc_macro": 0.566,
+      "any_spike_roc_auc": 0.8174,
+      "any_spike_pr_auc": 0.4246,
+      "Best_Params": "{\"C\": 10.0}"
+    },
+    {
+      "Model": "Random Forest (Balanced)",
+      "accuracy": 0.642,
+      "macro_precision": 0.5111,
+      "macro_recall": 0.6659,
+      "macro_f1": 0.5213,
+      "weighted_f1": 0.6928,
+      "roc_auc_ovr_macro": 0.8444,
+      "pr_auc_macro": 0.5771,
+      "any_spike_roc_auc": 0.8255,
+      "any_spike_pr_auc": 0.4696,
+      "Best_Params": "{\"max_depth\": 8, \"min_samples_leaf\": 10, \"n_estimators\": 100}"
+    },
+    {
+      "Model": "Gradient Boosting Classifier",
+      "accuracy": 0.8084,
+      "macro_precision": 0.6044,
+      "macro_recall": 0.4495,
+      "macro_f1": 0.4786,
+      "weighted_f1": 0.7721,
+      "roc_auc_ovr_macro": 0.8454,
+      "pr_auc_macro": 0.5594,
+      "any_spike_roc_auc": 0.8431,
+      "any_spike_pr_auc": 0.5018,
+      "Best_Params": "{\"learning_rate\": 0.1, \"max_depth\": 3, \"n_estimators\": 100}"
+    },
+    {
+      "Model": "Decision Tree (Balanced)",
+      "accuracy": 0.5277,
+      "macro_precision": 0.4741,
+      "macro_recall": 0.5741,
+      "macro_f1": 0.4314,
+      "weighted_f1": 0.6027,
+      "roc_auc_ovr_macro": 0.7821,
+      "pr_auc_macro": 0.4744,
+      "any_spike_roc_auc": 0.799,
+      "any_spike_pr_auc": 0.4069,
+      "Best_Params": "{\"max_depth\": 4, \"min_samples_leaf\": 10}"
+    },
+    {
+      "Model": "Gaussian Naive Bayes",
+      "accuracy": 0.5076,
+      "macro_precision": 0.3894,
+      "macro_recall": 0.4972,
+      "macro_f1": 0.3204,
+      "weighted_f1": 0.5705,
+      "roc_auc_ovr_macro": 0.7676,
+      "pr_auc_macro": 0.4535,
+      "any_spike_roc_auc": 0.8289,
+      "any_spike_pr_auc": 0.4416,
+      "Best_Params": "{}"
+    },
+    {
+      "Model": "AdaBoost Classifier",
+      "accuracy": 0.8034,
+      "macro_precision": 0.2678,
+      "macro_recall": 0.3333,
+      "macro_f1": 0.297,
+      "weighted_f1": 0.7158,
+      "roc_auc_ovr_macro": 0.7357,
+      "pr_auc_macro": 0.4119,
+      "any_spike_roc_auc": 0.7542,
+      "any_spike_pr_auc": 0.3324,
+      "Best_Params": "{\"learning_rate\": 0.05, \"n_estimators\": 50}"
+    }
+  ]
+}

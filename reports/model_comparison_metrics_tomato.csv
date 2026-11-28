@@ -1,14 +1,16 @@
-Model,MAE,MSE,RMSE,R2,MAPE (%)
-Naive Persistence Baseline,83.17,12568.11,112.11,0.7771,11.25
-Simple Linear Regression,89.35,13008.63,114.06,0.7693,12.76
-Multiple Linear Regression,69.66,8851.71,94.08,0.843,9.47
-Polynomial Regression (deg=2),95.4,14712.71,121.3,0.739,13.18
-Ridge Regression (L2),69.32,8799.0,93.8,0.8439,9.44
-Lasso Regression (L1),68.66,8715.15,93.35,0.8454,9.36
-Decision Tree Regressor,120.84,25226.34,158.83,0.5526,17.14
-KNN Regressor (k=7),178.59,49008.54,221.38,0.1307,27.14
-SVR (RBF Kernel),141.78,33914.26,184.16,0.3985,22.22
-Bagging Regressor,90.71,14220.06,119.25,0.7478,12.95
-AdaBoost Regressor,122.53,26154.57,161.72,0.5361,17.35
-Stacking Regressor,70.43,8941.07,94.56,0.8414,9.5
-Voting Regressor,75.48,10063.29,100.32,0.8215,10.44
+Model,MAE,MSE,RMSE,R2,MAPE (%),Selected_By_Validation
+Naive Persistence Baseline (P_t),69.47,12900.76,113.58,0.7545,10.56,False
+Simple Linear Regression,79.31,12923.16,113.68,0.7541,12.5,False
+Multiple Linear Regression,77.0,10999.09,104.88,0.7907,11.77,False
+Polynomial Regression (deg=2),113.17,19386.3,139.23,0.6311,18.23,False
+Ridge Regression (L2),83.49,11938.77,109.26,0.7728,13.09,False
+Lasso Regression (L1),75.95,10736.07,103.61,0.7957,11.99,True
+Decision Tree Regressor,101.27,19505.33,139.66,0.6288,15.51,False
+KNN Regressor,174.14,48931.66,221.21,0.0688,26.33,False
+SVR (RBF Kernel),107.78,19487.75,139.6,0.6291,16.65,False
+Bagging Regressor,83.47,13502.75,116.2,0.743,12.57,False
+Random Forest Regressor,84.13,13519.56,116.27,0.7427,12.59,False
+AdaBoost Regressor,93.3,17068.08,130.64,0.6752,13.79,False
+Gradient Boosting Regressor,87.18,15352.79,123.91,0.7078,13.71,False
+Stacking Regressor,86.21,12715.85,112.76,0.758,12.22,False
+Voting Regressor,76.14,10917.51,104.49,0.7922,11.71,False

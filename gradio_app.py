@@ -1,295 +1,183 @@
 """
-AI-Based Food Inflation Prediction and Household Affordability Monitoring System
-Gradio Web Application for 100% Free Deployment on Hugging Face Spaces (Gradio SDK)
-Course: Third-Year B.Tech AIML Practical Examination (30-Mark Rubric)
+Gradio Dashboard — Hugging Face Spaces & Standalone Web UI (v3.0.0-leakfree).
+
+Synchronized with leak-free `src/inference.py`, `src/live_data.py`, `src/market_comparison.py`,
+and `src/affordability.py`.
 """
 
+import json
 import sys
 from pathlib import Path
-from datetime import datetime
-import pandas as pd
-import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+
 import gradio as gr
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(PROJECT_ROOT))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.inference import UnifiedCommodityPredictor, CommodityPricePredictor
-from src.affordability import calculate_household_affordability, NSSO_BENCHMARKS, classify_affordability
+from src.affordability import calculate_household_affordability
+from src.inference import UnifiedCommodityPredictor, UnsupportedCommodityError
+from src.live_data import (
+    fetch_latest_market_data,
+    get_historical_latest_features,
+    get_observed_retail_price,
+)
+from src.market_comparison import compare_markets, get_markets_for_commodity
 
-# Load predictors
-unified_predictor = UnifiedCommodityPredictor(models_dir=PROJECT_ROOT / "models")
-tomato_predictor = CommodityPricePredictor(models_dir=PROJECT_ROOT / "models", commodity="Tomato")
-onion_predictor = CommodityPricePredictor(models_dir=PROJECT_ROOT / "models", commodity="Onion")
+MODELS_DIR = PROJECT_ROOT / "models"
+unified = UnifiedCommodityPredictor(models_dir=MODELS_DIR)
 
 
-# -------------------------------------------------------------
-# Module 1: Price Forecasting Callback
-# -------------------------------------------------------------
-def forecast_price(model_choice, commodity, current_price_rs_per_kg, arrivals_tonnes, month_name, day_name):
-    month_map = {
-        "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
-        "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
-    }
-    day_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, "Friday": 4, "Saturday": 5, "Sunday": 6}
+def gradio_predict(
+    commodity: str,
+    market: str,
+    input_mode: str,
+    modal_price: float,
+    price_lag_1: float,
+    price_lag_3: float,
+    price_lag_7: float,
+    arrival_tonnes: float,
+    month: int,
+    allow_experimental: bool,
+):
+    try:
+        if input_mode == "Historical Archive Replay":
+            hist = get_historical_latest_features(commodity, market)
+            res = unified.predict_from_features(
+                hist["features"],
+                allow_experimental=allow_experimental,
+                feature_mode="historical_archive_replay",
+            )
+            obs_info = f"Observation: {hist['observation_date']} (Actual t+1: Rs. {hist['actual_next_price_rs_per_qtl']}/Qtl)"
+        elif input_mode == "Live API Fetch":
+            live = fetch_latest_market_data(commodity, market)
+            if not live.get("lag_features_ready"):
+                return (
+                    f"Live Fetch Status: {live.get('freshness_label')}\n"
+                    f"Message: {live.get('message')}\n"
+                    "Per zero-fabrication rules, lag inference is withheld across multi-year archive gaps."
+                )
+            res = unified.predict_from_features(
+                live["features"],
+                allow_experimental=allow_experimental,
+                feature_mode="live_api_continuous",
+            )
+            obs_info = f"Live Date: {live.get('observation_date')}"
+        else:
+            vals = [modal_price, price_lag_1, price_lag_3, price_lag_7]
+            res = unified.predict(
+                commodity=commodity,
+                market=market,
+                modal_price=modal_price,
+                price_lag_1=price_lag_1,
+                price_lag_3=price_lag_3,
+                price_lag_7=price_lag_7,
+                rolling_mean_7=sum(vals) / 4.0,
+                rolling_std_7=float(pd.Series(vals).std()),
+                rolling_min_7=min(vals),
+                rolling_max_7=max(vals),
+                arrival_tonnes=arrival_tonnes,
+                arrival_lag_1=arrival_tonnes,
+                rolling_arrival_mean_7=arrival_tonnes,
+                daily_spread=150.0,
+                month=int(month),
+                day_of_week=2,
+                allow_experimental=allow_experimental,
+                allow_manual_approx=False,
+            )
+            obs_info = "Manual user-entered lags"
 
-    month = month_map.get(month_name, 7)
-    day_of_week = day_map.get(day_name, 2)
-    is_monsoon = 1 if month in [6, 7, 8, 9] else 0
-
-    current_price_qtl = current_price_rs_per_kg * 100.0
-
-    if "Universal" in model_choice:
-        res = unified_predictor.predict(
-            commodity=commodity,
-            current_price=current_price_qtl,
-            arrivals=arrivals_tonnes,
-            month=month,
-            day_of_week=day_of_week
+        ew = res["early_warning_classifier"]
+        obs_ret = res["observed_retail_reference"]
+        return (
+            f"Commodity / Market : {res['commodity']} @ {res['market']}\n"
+            f"Source / Horizon   : {obs_info} | {res['prediction_horizon']}\n"
+            f"Current Modal      : Rs. {res['current_modal_price_rs_per_qtl']}/Qtl (Equiv Rs. {res['current_wholesale_equiv_rs_per_kg']}/Kg)\n"
+            f"Predicted Next t+1 : Rs. {res['predicted_next_session_rs_per_qtl']}/Qtl ({res['predicted_change_pct']:+.2f}%)\n"
+            f"Wholesale Equiv/Kg : Rs. {res['wholesale_equiv_rs_per_kg']}/Kg (unit conversion only, NOT retail prediction)\n"
+            f"Observed DCA Retail: Rs. {obs_ret.get('retail_price_rs_per_kg')}/Kg ({obs_ret.get('centre')}, {obs_ret.get('observation_date')})\n"
+            f"Retail ML Status   : {res['retail_estimation_status']}\n"
+            f"Early Warning (ML) : {ew.get('predicted_regime')} | Probs={ew.get('class_probabilities')} | Reliable={ew.get('is_reliable_early_warning')}\n"
+            f"Warning / Notes    : {res.get('validation_warning') or 'None'}"
         )
-    elif "Tomato" in model_choice:
-        feat_dict = {
-            'price_lag_1': current_price_qtl,
-            'price_lag_3': current_price_qtl * 0.98,
-            'price_lag_7': current_price_qtl * 0.95,
-            'rolling_mean_7': current_price_qtl * 0.97,
-            'rolling_std_7': current_price_qtl * 0.08,
-            'rolling_min_7': current_price_qtl * 0.90,
-            'rolling_max_7': current_price_qtl * 1.05,
-            'price_momentum_7': current_price_qtl * 0.05,
-            'daily_spread': current_price_qtl * 0.20,
-            'arrival_tonnes': arrivals_tonnes,
-            'arrival_lag_1': arrivals_tonnes * 1.02,
-            'rolling_arrival_mean_7': arrivals_tonnes,
-            'month': month,
-            'day_of_week': day_of_week,
-            'is_monsoon_season': is_monsoon
-        }
-        res = tomato_predictor.predict(feat_dict)
-    else:
-        feat_dict = {
-            'price_lag_1': current_price_qtl,
-            'price_lag_3': current_price_qtl * 0.98,
-            'price_lag_7': current_price_qtl * 0.95,
-            'rolling_mean_7': current_price_qtl * 0.97,
-            'rolling_std_7': current_price_qtl * 0.08,
-            'rolling_min_7': current_price_qtl * 0.90,
-            'rolling_max_7': current_price_qtl * 1.05,
-            'price_momentum_7': current_price_qtl * 0.05,
-            'daily_spread': current_price_qtl * 0.20,
-            'arrival_tonnes': arrivals_tonnes,
-            'arrival_lag_1': arrivals_tonnes * 1.02,
-            'rolling_arrival_mean_7': arrivals_tonnes,
-            'month': month,
-            'day_of_week': day_of_week,
-            'is_monsoon_season': is_monsoon
-        }
-        res = onion_predictor.predict(feat_dict)
-
-    pct = res['predicted_change_percentage']
-    diff_qtl = res['predicted_change_rs_per_qtl']
-    p_pred_kg = res['predicted_next_price_rs_per_kg']
-    p_obs_kg = res['observed_price_rs_per_kg']
-
-    if pct > 10.0:
-        alert_msg = f"⚠️ INFLATIONARY SURGE ALERT (+{pct:.2f}%): Price is projected to surge by ₹{diff_qtl:.2f}/Qtl. Consider supply buffer release."
-    elif pct < -10.0:
-        alert_msg = f"📉 PRICE CRASH ALERT ({pct:.2f}%): Price is projected to drop sharply. Risk of farmer distress selling."
-    else:
-        alert_msg = f"✅ STABLE TRADING REGIME ({pct:+.2f}%): Projected price movement is within normal oscillation bounds."
-
-    summary_text = (
-        f"### Forecast Summary: {res['commodity']}\n\n"
-        f"- **Current Wholesale Price:** ₹ {res['observed_price_rs_per_qtl']:,.2f} / Quintal (₹ {p_obs_kg:.2f} / Kg)\n"
-        f"- **Predicted Next-Session (t+1):** ₹ {res['predicted_next_price_rs_per_qtl']:,.2f} / Quintal (**₹ {p_pred_kg:.2f} / Kg**)\n"
-        f"- **Projected Price Shift:** ₹ {diff_qtl:+.2f} / Quintal (**{pct:+.2f}%**)\n"
-        f"- **Prediction Horizon:** {res.get('prediction_horizon', '1 trading session (t+1)')}\n\n"
-        f"**Market Status:** {alert_msg}"
-    )
-
-    # Plot
-    fig, ax = plt.subplots(figsize=(7, 2.5))
-    bars = ax.barh(['Observed (t)', 'Predicted (t+1)'], [p_obs_kg, p_pred_kg], color=['#3B82F6', '#EF4444' if pct > 0 else '#10B981'], height=0.45)
-    ax.set_xlabel('Price in ₹ per Kilogram (Retail Equivalent)', fontsize=10)
-    ax.set_title(f"Retail Equivalent Shift for {commodity}", fontsize=11, fontweight='bold')
-    for bar in bars:
-        w = bar.get_width()
-        ax.text(w + 0.2, bar.get_y() + bar.get_height()/2, f"₹ {w:.2f}/kg", va='center', fontsize=9, fontweight='bold')
-    ax.set_xlim(0, max(p_obs_kg, p_pred_kg) * 1.25)
-    ax.grid(axis='x', linestyle=':', alpha=0.6)
-    plt.tight_layout()
-
-    return summary_text, fig
+    except UnsupportedCommodityError as exc:
+        return f"UNSUPPORTED COMMODITY BLOCKED:\n{exc}"
+    except Exception as exc:
+        return f"Error: {exc}"
 
 
-# -------------------------------------------------------------
-# Module 2: Affordability Callback
-# -------------------------------------------------------------
-def evaluate_affordability(monthly_income, sector, family_size, q_cereal, p_cereal, q_pulses, p_pulses, q_onion, p_onion, q_tomato, p_tomato, q_sugar, p_sugar):
-    basket = [
-        {"commodity_name": "Rice & Cereals", "monthly_quantity_kg": q_cereal, "current_retail_price_per_kg": p_cereal},
-        {"commodity_name": "Pulses (Moong Dal)", "monthly_quantity_kg": q_pulses, "current_retail_price_per_kg": p_pulses},
-        {"commodity_name": "Onion", "monthly_quantity_kg": q_onion, "current_retail_price_per_kg": p_onion},
-        {"commodity_name": "Tomato", "monthly_quantity_kg": q_tomato, "current_retail_price_per_kg": p_tomato},
-        {"commodity_name": "Sugar", "monthly_quantity_kg": q_sugar, "current_retail_price_per_kg": p_sugar},
-    ]
-
-    res = calculate_household_affordability(monthly_income=monthly_income, basket_items=basket, sector=sector)
-    share = res.get("current_food_budget_share_pct", 0.0)
-    bench = NSSO_BENCHMARKS["Urban_Average_Food_Share_Pct"] if sector.lower() == "urban" else NSSO_BENCHMARKS["Rural_Average_Food_Share_Pct"]
-    basket_cost = res.get("current_food_basket_cost_rs", res.get("total_food_basket_cost_current_rs", 0.0))
-    disc_funds = res.get("discretionary_income_remaining_rs", max(0.0, monthly_income - basket_cost))
-    status_label = res.get("affordability_status") or res.get("affordability_classification", "Moderate Vulnerability")
-
-    result_text = (
-        f"### Household Economic Vulnerability Assessment\n\n"
-        f"- **Monthly Household Earnings:** ₹ {monthly_income:,.2f}\n"
-        f"- **Total Monthly Food Basket Cost:** ₹ {basket_cost:,.2f}\n"
-        f"- **Food Budget Share:** **{share:.2f}%** of income\n"
-        f"- **Remaining Discretionary Funds:** ₹ {disc_funds:,.2f}\n"
-        f"- **Vulnerability Classification (Engel's Law):** **{status_label}**\n"
-        f"- **National {sector} Average Benchmark (NSSO 2022-23):** {bench:.1f}%\n"
-    )
-
-    # Plot Gauge
-    fig, ax = plt.subplots(figsize=(8, 2.2))
-    ax.barh(['Food Budget Share'], [min(100.0, share)], color='#EF4444' if share > 50 else '#F59E0B' if share > 35 else '#10B981', height=0.4)
-    ax.axvline(30.0, color='gray', linestyle='--', label='Top 20% Fractile (29.8%)')
-    ax.axvline(bench, color='blue', linestyle='-', lw=2, label=f'NSSO {sector} Avg ({bench:.1f}%)')
-    ax.axvline(56.6, color='red', linestyle='--', label='Bottom 20% Fractile (56.6%)')
-    ax.set_xlim(0, 100)
-    ax.set_xlabel('% of Monthly Household Income', fontsize=9)
-    ax.set_title("Engel Curve Vulnerability Gauge against NSSO 2022-23 National Fractiles", fontsize=10, fontweight='bold')
-    ax.legend(loc='upper right', fontsize=8)
-    ax.grid(axis='x', linestyle=':', alpha=0.6)
-    plt.tight_layout()
-
-    return result_text, fig
-
-
-# -------------------------------------------------------------
-# Gradio UI Layout (gr.Blocks)
-# -------------------------------------------------------------
-with gr.Blocks(title="AI Food Inflation & Affordability Monitor") as demo:
-    gr.Markdown("# 🌾 AI-Based Food Inflation Prediction and Household Affordability Monitor")
-    gr.Markdown("**B.Tech AIML Practical Examination Project • 30/30 Marks Rubric Compliance • Hugging Face Gradio Deployment**")
-
-    with gr.Tabs():
-        # TAB 1: PRICE FORECASTER
-        with gr.Tab("🔮 Commodity Price Forecaster"):
-            gr.Markdown("### Forecast Next-Session Mandi Wholesale & Retail Prices (t+1)")
-            with gr.Row():
-                with gr.Column():
-                    model_input = gr.Dropdown(
-                        choices=[
-                            "Universal Cross-Commodity Model (Ridge L2 — Predicts Any Food)",
-                            "Dedicated Tomato Specialist (Lasso L1 — Pune APMC)",
-                            "Dedicated Onion Specialist (SVR RBF — Pune APMC)"
-                        ],
-                        value="Universal Cross-Commodity Model (Ridge L2 — Predicts Any Food)",
-                        label="Select Forecasting Model"
-                    )
-                    commodity_input = gr.Dropdown(
-                        choices=["Tomato", "Onion", "Moong Dal", "Sugar", "Potato", "Rice", "Wheat"],
-                        value="Tomato",
-                        label="Food Commodity"
-                    )
-                    price_input = gr.Slider(minimum=1.0, maximum=250.0, value=14.0, step=0.5, label="Today's Retail Price (₹/Kg)")
-                    arrivals_input = gr.Slider(minimum=0.0, maximum=3000.0, value=150.0, step=10.0, label="Today's Mandi Physical Arrivals (Tonnes)")
-                    month_input = gr.Dropdown(
-                        choices=["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-                        value="July",
-                        label="Observation Month (Monsoon: June-September)"
-                    )
-                    day_input = gr.Dropdown(
-                        choices=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                        value="Wednesday",
-                        label="Day of Week"
-                    )
-                    predict_btn = gr.Button("🚀 Predict Tomorrow's Price", variant="primary")
-
-                with gr.Column():
-                    forecast_output_text = gr.Markdown("Click **Predict** to view forecast.")
-                    forecast_plot = gr.Plot(label="Price Comparison Chart")
-
-            predict_btn.click(
-                fn=forecast_price,
-                inputs=[model_input, commodity_input, price_input, arrivals_input, month_input, day_input],
-                outputs=[forecast_output_text, forecast_plot]
+def gradio_affordability(income: float, sector: str, tomato_kg: float, onion_kg: float, dal_kg: float, sugar_kg: float):
+    try:
+        items = []
+        for comm, qty in [("Tomato", tomato_kg), ("Onion", onion_kg), ("Moong Dal", dal_kg), ("Sugar", sugar_kg)]:
+            obs = get_observed_retail_price(comm)
+            price = float(obs.get("retail_price_rs_per_kg") or 45.0)
+            items.append(
+                {
+                    "commodity_name": comm,
+                    "monthly_quantity_kg": qty,
+                    "current_retail_price_per_kg": price,
+                    "predicted_retail_price_per_kg": price,
+                }
             )
+        res = calculate_household_affordability(monthly_income=income, basket_items=items, sector=sector)
+        return (
+            f"Status: {res['affordability_status']}\n"
+            f"Current Basket Cost: Rs. {res['current_food_basket_cost_rs']:.2f}\n"
+            f"Food Budget Share  : {res['current_food_budget_share_pct']:.2f}%\n"
+            f"Remaining Income   : Rs. {res['discretionary_income_remaining_rs']:.2f}\n"
+            f"Disclaimer: {res['methodology_disclaimer']}"
+        )
+    except Exception as exc:
+        return f"Affordability Error: {exc}"
 
-        # TAB 2: HOUSEHOLD AFFORDABILITY
-        with gr.Tab("🛒 Household Affordability & Engel's Law"):
-            gr.Markdown("### Simulate Inflationary Stress under Engel's Law (NSSO HCES 2022-23)")
-            with gr.Row():
-                with gr.Column():
-                    inc_input = gr.Slider(minimum=5000, maximum=100000, value=25000, step=1000, label="Monthly Household Income (₹)")
-                    sec_input = gr.Radio(choices=["Urban", "Rural"], value="Urban", label="Sector")
-                    fam_input = gr.Slider(minimum=1, maximum=10, value=4, step=1, label="Family Members")
-                    
-                    gr.Markdown("#### Monthly Grocery Quantities & Prices:")
-                    qc = gr.Number(value=20.0, label="Rice/Cereals (kg)")
-                    pc = gr.Number(value=38.0, label="Cereal Price (₹/kg)")
-                    qp = gr.Number(value=4.0, label="Pulses (Moong Dal) (kg)")
-                    pp = gr.Number(value=74.0, label="Pulses Price (₹/kg)")
-                    qo = gr.Number(value=6.0, label="Onion (kg)")
-                    po = gr.Number(value=25.0, label="Onion Price (₹/kg)")
-                    qt = gr.Number(value=5.0, label="Tomato (kg)")
-                    pt = gr.Number(value=28.0, label="Tomato Price (₹/kg)")
-                    qs = gr.Number(value=3.0, label="Sugar (kg)")
-                    ps = gr.Number(value=42.0, label="Sugar Price (₹/kg)")
-                    
-                    afford_btn = gr.Button("📊 Calculate Affordability & Budget Share", variant="primary")
 
-                with gr.Column():
-                    afford_output_text = gr.Markdown("Enter household parameters and click calculate.")
-                    afford_plot = gr.Plot(label="Engel Curve Vulnerability Gauge")
+def gradio_market_compare(commodity: str):
+    try:
+        mkts = get_markets_for_commodity(commodity, min_rows=10)[:4]
+        comp = compare_markets(commodity, mkts)
+        return comp["summary_df"].to_string(index=False) + "\n\nOverlapping Dates Comparison:\n" + comp["overlapping_comparison_df"].to_string(index=False)
+    except Exception as exc:
+        return f"Comparison Error: {exc}"
 
-            afford_btn.click(
-                fn=evaluate_affordability,
-                inputs=[inc_input, sec_input, fam_input, qc, pc, qp, pp, qo, po, qt, pt, qs, ps],
-                outputs=[afford_output_text, afford_plot]
-            )
 
-        # TAB 3: BENCHMARKS & METRICS
-        with gr.Tab("📊 Model Benchmarks & Syllabus Metrics (Rubric G — 8 Marks)"):
-            gr.Markdown("### Empirical Comparison across 675 Unseen Multi-Commodity Test Sessions")
-            bench_df = pd.DataFrame([
-                {"Model": "Ridge Regression (L2)", "Type": "Regularized Linear", "MAE (₹/Qtl)": 65.97, "RMSE (₹/Qtl)": 194.64, "R2 Score": 0.9935, "MAPE (%)": 6.65, "Status": "CHAMPION"},
-                {"Model": "Multiple Linear Regression", "Type": "Standard OLS", "MAE (₹/Qtl)": 66.38, "RMSE (₹/Qtl)": 194.70, "R2 Score": 0.9934, "MAPE (%)": 6.61, "Status": "Evaluated"},
-                {"Model": "Lasso Regression (L1)", "Type": "Sparse Regularized", "MAE (₹/Qtl)": 66.37, "RMSE (₹/Qtl)": 194.71, "R2 Score": 0.9934, "MAPE (%)": 6.62, "Status": "Evaluated"},
-                {"Model": "ElasticNet Regression", "Type": "Combined L1+L2", "MAE (₹/Qtl)": 79.93, "RMSE (₹/Qtl)": 198.47, "R2 Score": 0.9932, "MAPE (%)": 8.06, "Status": "Evaluated"},
-                {"Model": "Gradient Boosting", "Type": "Ensemble Boosting", "MAE (₹/Qtl)": 103.86, "RMSE (₹/Qtl)": 209.37, "R2 Score": 0.9924, "MAPE (%)": 10.08, "Status": "Evaluated"},
-                {"Model": "Random Forest", "Type": "Ensemble Bagging", "MAE (₹/Qtl)": 107.15, "RMSE (₹/Qtl)": 209.62, "R2 Score": 0.9924, "MAPE (%)": 10.64, "Status": "Evaluated"},
-                {"Model": "Decision Tree", "Type": "Tree (CART)", "MAE (₹/Qtl)": 125.90, "RMSE (₹/Qtl)": 230.80, "R2 Score": 0.9908, "MAPE (%)": 11.88, "Status": "Evaluated"},
-                {"Model": "Support Vector Regressor", "Type": "Kernel SVM", "MAE (₹/Qtl)": 149.00, "RMSE (₹/Qtl)": 271.98, "R2 Score": 0.9872, "MAPE (%)": 14.53, "Status": "Evaluated"},
-            ])
-            gr.Dataframe(value=bench_df, label="Universal Model Benchmark Leaderboard")
+with gr.Blocks(title="Food Inflation & Household Affordability Monitor") as demo:
+    gr.Markdown("# AI Food Inflation Prediction & Household Affordability Monitor (`v3.0.0-leakfree`)")
+    with gr.Tab("Price Forecasting"):
+        c_in = gr.Textbox(value="Tomato", label="Commodity (Validated: Tomato, Onion, Moong Dal, Sugar)")
+        m_in = gr.Dropdown(["Pune", "Mumbai", "Lasalgaon"], value="Pune", label="Market")
+        mode_in = gr.Radio(["Historical Archive Replay", "Live API Fetch", "Manual Entry"], value="Historical Archive Replay", label="Input Mode")
+        with gr.Row():
+            mp = gr.Number(value=1300, label="Current Modal (Rs/Qtl)")
+            l1 = gr.Number(value=1250, label="Lag 1")
+            l3 = gr.Number(value=1180, label="Lag 3")
+            l7 = gr.Number(value=1100, label="Lag 7")
+        with gr.Row():
+            arr = gr.Number(value=120, label="Arrivals (Tonnes)")
+            mo = gr.Slider(1, 12, value=11, step=1, label="Month")
+            exp = gr.Checkbox(value=False, label="Allow Experimental Unseen Crop")
+        btn = gr.Button("Predict Next Active Trading Session")
+        out = gr.Textbox(lines=10, label="Forecast Output")
+        btn.click(gradio_predict, [c_in, m_in, mode_in, mp, l1, l3, l7, arr, mo, exp], out)
 
-            fig_p = PROJECT_ROOT / "reports" / "figures" / "unified_multi_commodity_evaluation.png"
-            if fig_p.exists():
-                gr.Image(value=str(fig_p), label="4-Quadrant Cross-Commodity Generalization Scatter (Actual vs Predicted 1:1 Identity Fit)")
+    with gr.Tab("Market Comparison"):
+        mc = gr.Dropdown(["Onion", "Tomato", "Sugar", "Moong Dal"], value="Onion", label="Commodity")
+        mbtn = gr.Button("Compare Exact APMC Markets")
+        mout = gr.Textbox(lines=14, label="Cross-Market Historical Comparison")
+        mbtn.click(gradio_market_compare, [mc], mout)
 
-        # TAB 4: VIVA & RUBRICS
-        with gr.Tab("🎓 Academic Viva & Examination Guide (30 Marks Compliance)"):
-            gr.Markdown("""
-            ### Top Viva Questions & Model Answers for Practical Examination:
-
-            **Q1: Why is random train_test_split strictly prohibited for time-series price data?**  
-            *Answer:* Agricultural price series exhibit temporal autocorrelation. Random splitting leaks future observations ($P_{t+1}$) into the training set, causing lookahead bias. We strictly use **Chronological Splitting (70% Train, 15% Val, 15% Test)** and expanding-window **TimeSeriesSplit**.
-
-            **Q2: How does Ridge ($L_2$) differ from Lasso ($L_1$) regularization in this project?**  
-            *Answer:* Ridge penalizes $\\sum w_j^2$, shrinking correlated lag weights ($P_{t-1}, P_{t-3}, P_{t-7}$) smoothly without setting them to zero (Champion on Unified Model with $R^2=0.9935$). Lasso penalizes $\\sum |w_j|$, driving redundant features strictly to zero (Champion on Tomato).
-
-            **Q3: What is the economic significance of Engel's Law in our affordability engine?**  
-            *Answer:* Engel's Law states that as household income rises, the proportion spent on food declines. According to NSSO 2022-23, India's bottom 20% fractile spends **56.6%** of income on food, while the top 20% spends only **29.8%**. Our system flags households crossing critical inflation thresholds (>45% or >60%).
-
-            **Q4: How did Mini-batch Gradient Descent outperform Batch GD and SGD?**  
-            *Answer:* Batch GD is computationally heavy ($N=3,133$), while SGD produces high stochastic oscillations. Mini-batch GD ($batch=32$) balances vectorization efficiency with stochastic gradient noise, achieving the lowest test error (**RMSE: ₹93.58/Qtl**).
-            """)
+    with gr.Tab("Household Affordability"):
+        inc = gr.Number(value=15000, label="Monthly Income (Rs.)")
+        sec = gr.Radio(["Urban", "Rural"], value="Urban", label="Sector")
+        with gr.Row():
+            tk = gr.Number(value=12, label="Tomato (Kg/mo)")
+            ok = gr.Number(value=15, label="Onion (Kg/mo)")
+            dk = gr.Number(value=4, label="Moong Dal (Kg/mo)")
+            sk = gr.Number(value=3, label="Sugar (Kg/mo)")
+        abtn = gr.Button("Assess Affordability")
+        aout = gr.Textbox(lines=8, label="Affordability Output")
+        abtn.click(gradio_affordability, [inc, sec, tk, ok, dk, sk], aout)
 
 if __name__ == "__main__":
-    demo.launch(theme=gr.themes.Soft())
+    demo.launch()

@@ -1,16 +1,53 @@
 {
   "model_architecture": "Unified Cross-Commodity Regression Pipeline",
+  "selection_protocol": "TimeSeriesSplit CV on Train -> Validation-Only Selection -> Refit Train+Val -> Single Untouched Test Evaluation",
   "champion_algorithm": "Ridge Regression (L2)",
-  "dataset_version": "v2.0.0-unified",
-  "training_timestamp": "2026-11-22 02:19:01",
-  "total_training_records": 3133,
-  "total_validation_records": 672,
-  "total_test_records": 675,
+  "champion_hyperparameters": {
+    "alpha": 1.0
+  },
+  "dataset_version": "v3.0.0-leakfree-unified",
+  "dataset_file": "model_ready_unified_commodities_clean.csv",
+  "training_timestamp": "2026-11-27 23:56:48",
+  "split_cutoffs": {
+    "train_dates": "2016-01-09 to 2018-02-15",
+    "validation_dates": "2018-02-17 to 2018-07-22",
+    "test_dates": "2018-07-24 to 2018-12-30"
+  },
+  "total_training_records": 2800,
+  "total_validation_records": 595,
+  "total_test_records": 603,
   "supported_commodities": [
     "Moong Dal",
     "Onion",
     "Sugar",
     "Tomato"
+  ],
+  "supported_markets": [
+    "Lasalgaon",
+    "Mumbai",
+    "Pune"
+  ],
+  "supported_commodity_market_pairs": [
+    {
+      "commodity": "Moong Dal",
+      "market": "Mumbai"
+    },
+    {
+      "commodity": "Onion",
+      "market": "Lasalgaon"
+    },
+    {
+      "commodity": "Onion",
+      "market": "Pune"
+    },
+    {
+      "commodity": "Sugar",
+      "market": "Mumbai"
+    },
+    {
+      "commodity": "Tomato",
+      "market": "Pune"
+    }
   ],
   "supported_categories": [
     "Pulses",
@@ -19,9 +56,11 @@
   ],
   "categorical_features": [
     "commodity_name",
-    "category"
+    "category",
+    "market_name"
   ],
   "numeric_features": [
+    "modal_price_rs_per_qtl",
     "price_lag_1",
     "price_lag_3",
     "price_lag_7",
@@ -42,6 +81,8 @@
   "all_features": [
     "commodity_name",
     "category",
+    "market_name",
+    "modal_price_rs_per_qtl",
     "price_lag_1",
     "price_lag_3",
     "price_lag_7",
@@ -59,116 +100,413 @@
     "is_monsoon_season",
     "is_perishable"
   ],
-  "prediction_horizon": "t+1 trading session",
-  "price_unit": "Rs/Quintal (Wholesale) & Rs/Kg (Retail equivalent)",
+  "prediction_horizon": "Next observed trading session (t+1, not guaranteed next calendar day)",
+  "price_unit": "Rs/Quintal (Wholesale auction bids only; Rs/Kg division is unit conversion only)",
   "overall_test_metrics": {
-    "mae_rs_per_qtl": 65.97,
-    "rmse_rs_per_qtl": 194.64,
-    "r2_score": 0.9935,
-    "mape_pct": 6.65
+    "mae_rs_per_qtl": 55.27,
+    "mse_rs_per_qtl": 8722.06,
+    "rmse_rs_per_qtl": 93.39,
+    "r2_score": 0.9986,
+    "mape_pct": 6.69
+  },
+  "persistence_baseline_test_metrics": {
+    "MAE": 47.85,
+    "MSE": 9601.08,
+    "RMSE": 97.99,
+    "R2": 0.9984,
+    "MAPE": 5.85
+  },
+  "improvement_over_baseline_test": {
+    "mae_reduction_rs_per_qtl": -7.42,
+    "rmse_reduction_rs_per_qtl": 4.6,
+    "beats_baseline_rmse": true
+  },
+  "macro_average_test_metrics": {
+    "macro_avg_mae": 50.42,
+    "macro_avg_mse": 7322.22,
+    "macro_avg_rmse": 77.03,
+    "macro_avg_r2": 0.8603,
+    "macro_avg_mape_pct": 5.86,
+    "baseline_macro_avg_mae": 42.43,
+    "baseline_macro_avg_rmse": 78.95,
+    "macro_rmse_improvement": 1.92
   },
   "per_commodity_metrics": {
     "Moong Dal": {
       "category": "Pulses",
-      "mean_price_rs_per_qtl": 7013.95,
-      "test_mae_rs_per_qtl": 25.14,
-      "test_mae_rs_per_kg": 0.25,
-      "test_rmse_rs_per_qtl": 47.74,
-      "test_rmse_rs_per_kg": 0.48,
-      "test_r2": 0.9833,
-      "test_mape_pct": 0.36,
-      "sample_count": 129
+      "mean_price_rs_per_qtl": 7034.15,
+      "test_mae_rs_per_qtl": 20.65,
+      "test_mse_rs_per_qtl": 2047.63,
+      "test_rmse_rs_per_qtl": 45.25,
+      "test_r2": 0.9847,
+      "test_mape_pct": 0.29,
+      "sample_count": 123,
+      "persistence_baseline": {
+        "mae": 11.38,
+        "rmse": 42.29,
+        "r2": 0.9866,
+        "mape_pct": 0.16
+      },
+      "improvement_over_baseline": {
+        "rmse_reduction_rs_per_qtl": -2.96,
+        "mae_reduction_rs_per_qtl": -9.27,
+        "beats_baseline_rmse": false
+      }
     },
     "Onion": {
       "category": "Vegetables",
-      "mean_price_rs_per_qtl": 909.19,
-      "test_mae_rs_per_qtl": 93.68,
-      "test_mae_rs_per_kg": 0.94,
-      "test_rmse_rs_per_qtl": 273.83,
-      "test_rmse_rs_per_kg": 2.74,
-      "test_r2": 0.477,
-      "test_mape_pct": 10.25,
-      "sample_count": 266
+      "mean_price_rs_per_qtl": 867.5,
+      "test_mae_rs_per_qtl": 75.72,
+      "test_mse_rs_per_qtl": 14964.99,
+      "test_rmse_rs_per_qtl": 122.33,
+      "test_r2": 0.849,
+      "test_mape_pct": 10.04,
+      "sample_count": 228,
+      "persistence_baseline": {
+        "mae": 71.03,
+        "rmse": 128.41,
+        "r2": 0.8336,
+        "mape_pct": 9.01
+      },
+      "improvement_over_baseline": {
+        "rmse_reduction_rs_per_qtl": 6.08,
+        "mae_reduction_rs_per_qtl": -4.69,
+        "beats_baseline_rmse": true
+      }
     },
     "Sugar": {
       "category": "Sugars & Sweets",
-      "mean_price_rs_per_qtl": 3222.32,
-      "test_mae_rs_per_qtl": 40.98,
-      "test_mae_rs_per_kg": 0.41,
-      "test_rmse_rs_per_qtl": 177.63,
-      "test_rmse_rs_per_kg": 1.78,
-      "test_r2": 0.056,
-      "test_mape_pct": 1.1,
-      "sample_count": 124
+      "mean_price_rs_per_qtl": 3205.61,
+      "test_mae_rs_per_qtl": 27.18,
+      "test_mse_rs_per_qtl": 1266.33,
+      "test_rmse_rs_per_qtl": 35.59,
+      "test_r2": 0.817,
+      "test_mape_pct": 0.85,
+      "sample_count": 121,
+      "persistence_baseline": {
+        "mae": 17.83,
+        "rmse": 31.52,
+        "r2": 0.8564,
+        "mape_pct": 0.55
+      },
+      "improvement_over_baseline": {
+        "rmse_reduction_rs_per_qtl": -4.07,
+        "mae_reduction_rs_per_qtl": -9.35,
+        "beats_baseline_rmse": false
+      }
     },
     "Tomato": {
       "category": "Vegetables",
-      "mean_price_rs_per_qtl": 761.06,
-      "test_mae_rs_per_qtl": 72.34,
-      "test_mae_rs_per_kg": 0.72,
-      "test_rmse_rs_per_qtl": 95.46,
-      "test_rmse_rs_per_kg": 0.95,
-      "test_r2": 0.8384,
-      "test_mape_pct": 10.11,
-      "sample_count": 156
+      "mean_price_rs_per_qtl": 706.87,
+      "test_mae_rs_per_qtl": 78.11,
+      "test_mse_rs_per_qtl": 11009.95,
+      "test_rmse_rs_per_qtl": 104.93,
+      "test_r2": 0.7905,
+      "test_mape_pct": 12.25,
+      "sample_count": 131,
+      "persistence_baseline": {
+        "mae": 69.47,
+        "rmse": 113.58,
+        "r2": 0.7545,
+        "mape_pct": 10.56
+      },
+      "improvement_over_baseline": {
+        "rmse_reduction_rs_per_qtl": 8.65,
+        "mae_reduction_rs_per_qtl": -8.64,
+        "beats_baseline_rmse": true
+      }
     }
   },
-  "all_models_benchmarked": [
-    {
-      "Model": "Multiple Linear Regression",
-      "MAE": 66.38,
-      "RMSE": 194.7,
-      "R2": 0.9934,
-      "MAPE": 6.61
+  "per_series_metrics": {
+    "Moong Dal @ Mumbai": {
+      "category": "Pulses",
+      "sample_count": 123,
+      "mean_actual_rs_per_qtl": 7034.15,
+      "std_actual_rs_per_qtl": 366.0,
+      "mae": 20.65,
+      "mse": 2047.63,
+      "rmse": 45.25,
+      "r2": 0.9847,
+      "mape_pct": 0.29,
+      "persistence_baseline": {
+        "mae": 11.38,
+        "rmse": 42.29,
+        "r2": 0.9866,
+        "mape_pct": 0.16
+      },
+      "improvement_over_baseline": {
+        "rmse_reduction_rs_per_qtl": -2.96,
+        "mae_reduction_rs_per_qtl": -9.27,
+        "beats_baseline_rmse": false
+      }
     },
+    "Onion @ Lasalgaon": {
+      "category": "Vegetables",
+      "sample_count": 97,
+      "mean_actual_rs_per_qtl": 795.78,
+      "std_actual_rs_per_qtl": 405.98,
+      "mae": 76.98,
+      "mse": 14724.36,
+      "rmse": 121.34,
+      "r2": 0.9107,
+      "mape_pct": 12.02,
+      "persistence_baseline": {
+        "mae": 66.96,
+        "rmse": 113.48,
+        "r2": 0.9219,
+        "mape_pct": 10.03
+      },
+      "improvement_over_baseline": {
+        "rmse_reduction_rs_per_qtl": -7.86,
+        "mae_reduction_rs_per_qtl": -10.02,
+        "beats_baseline_rmse": false
+      }
+    },
+    "Onion @ Pune": {
+      "category": "Vegetables",
+      "sample_count": 131,
+      "mean_actual_rs_per_qtl": 920.61,
+      "std_actual_rs_per_qtl": 209.22,
+      "mae": 74.79,
+      "mse": 15143.16,
+      "rmse": 123.06,
+      "r2": 0.6541,
+      "mape_pct": 8.57,
+      "persistence_baseline": {
+        "mae": 74.05,
+        "rmse": 138.42,
+        "r2": 0.5623,
+        "mape_pct": 8.25
+      },
+      "improvement_over_baseline": {
+        "rmse_reduction_rs_per_qtl": 15.36,
+        "mae_reduction_rs_per_qtl": -0.74,
+        "beats_baseline_rmse": true
+      }
+    },
+    "Sugar @ Mumbai": {
+      "category": "Sugars & Sweets",
+      "sample_count": 121,
+      "mean_actual_rs_per_qtl": 3205.61,
+      "std_actual_rs_per_qtl": 83.18,
+      "mae": 27.18,
+      "mse": 1266.33,
+      "rmse": 35.59,
+      "r2": 0.817,
+      "mape_pct": 0.85,
+      "persistence_baseline": {
+        "mae": 17.83,
+        "rmse": 31.52,
+        "r2": 0.8564,
+        "mape_pct": 0.55
+      },
+      "improvement_over_baseline": {
+        "rmse_reduction_rs_per_qtl": -4.07,
+        "mae_reduction_rs_per_qtl": -9.35,
+        "beats_baseline_rmse": false
+      }
+    },
+    "Tomato @ Pune": {
+      "category": "Vegetables",
+      "sample_count": 131,
+      "mean_actual_rs_per_qtl": 706.87,
+      "std_actual_rs_per_qtl": 229.23,
+      "mae": 78.11,
+      "mse": 11009.95,
+      "rmse": 104.93,
+      "r2": 0.7905,
+      "mape_pct": 12.25,
+      "persistence_baseline": {
+        "mae": 69.47,
+        "rmse": 113.58,
+        "r2": 0.7545,
+        "mape_pct": 10.56
+      },
+      "improvement_over_baseline": {
+        "rmse_reduction_rs_per_qtl": 8.65,
+        "mae_reduction_rs_per_qtl": -8.64,
+        "beats_baseline_rmse": true
+      }
+    }
+  },
+  "leave_one_commodity_out_experiment": {
+    "Moong Dal": {
+      "test_samples": 123,
+      "model_metrics": {
+        "MAE": 101.66,
+        "MSE": 11960.12,
+        "RMSE": 109.36,
+        "R2": 0.9107,
+        "MAPE": 1.44
+      },
+      "persistence_baseline": {
+        "MAE": 11.38,
+        "MSE": 1788.62,
+        "RMSE": 42.29,
+        "R2": 0.9866,
+        "MAPE": 0.16
+      },
+      "beats_baseline_rmse": false
+    },
+    "Onion": {
+      "test_samples": 228,
+      "model_metrics": {
+        "MAE": 99.02,
+        "MSE": 18394.94,
+        "RMSE": 135.63,
+        "R2": 0.8143,
+        "MAPE": 13.23
+      },
+      "persistence_baseline": {
+        "MAE": 71.03,
+        "MSE": 16487.86,
+        "RMSE": 128.41,
+        "R2": 0.8336,
+        "MAPE": 9.01
+      },
+      "beats_baseline_rmse": false
+    },
+    "Sugar": {
+      "test_samples": 121,
+      "model_metrics": {
+        "MAE": 63.51,
+        "MSE": 4743.77,
+        "RMSE": 68.88,
+        "R2": 0.3143,
+        "MAPE": 1.99
+      },
+      "persistence_baseline": {
+        "MAE": 17.83,
+        "MSE": 993.52,
+        "RMSE": 31.52,
+        "R2": 0.8564,
+        "MAPE": 0.55
+      },
+      "beats_baseline_rmse": false
+    },
+    "Tomato": {
+      "test_samples": 131,
+      "model_metrics": {
+        "MAE": 78.47,
+        "MSE": 10833.57,
+        "RMSE": 104.08,
+        "R2": 0.7938,
+        "MAPE": 12.25
+      },
+      "persistence_baseline": {
+        "MAE": 69.47,
+        "MSE": 12900.76,
+        "RMSE": 113.58,
+        "R2": 0.7545,
+        "MAPE": 10.56
+      },
+      "beats_baseline_rmse": true
+    }
+  },
+  "validation_candidates_benchmarked": [
     {
       "Model": "Ridge Regression (L2)",
-      "MAE": 65.97,
-      "RMSE": 194.64,
-      "R2": 0.9935,
-      "MAPE": 6.65
-    },
-    {
-      "Model": "Lasso Regression (L1)",
-      "MAE": 66.37,
-      "RMSE": 194.71,
-      "R2": 0.9934,
-      "MAPE": 6.62
+      "Val_MAE": 51.55,
+      "Val_MSE": 6926.14,
+      "Val_RMSE": 83.22,
+      "Val_R2": 0.9987,
+      "Val_MAPE": 6.28,
+      "Val_Macro_RMSE": 76.64,
+      "Val_Macro_R2": 0.8152,
+      "CV_Train_RMSE": 215.98,
+      "Beats_Val_Baseline": true,
+      "Best_Params": "{\"alpha\": 1.0}"
     },
     {
       "Model": "ElasticNet Regression",
-      "MAE": 79.93,
-      "RMSE": 198.47,
-      "R2": 0.9932,
-      "MAPE": 8.06
+      "Val_MAE": 52.87,
+      "Val_MSE": 6927.7,
+      "Val_RMSE": 83.23,
+      "Val_R2": 0.9987,
+      "Val_MAPE": 6.42,
+      "Val_Macro_RMSE": 76.89,
+      "Val_Macro_R2": 0.814,
+      "CV_Train_RMSE": 215.96,
+      "Beats_Val_Baseline": true,
+      "Best_Params": "{\"alpha\": 0.01, \"l1_ratio\": 0.8}"
     },
     {
-      "Model": "Decision Tree Regressor",
-      "MAE": 125.9,
-      "RMSE": 230.8,
-      "R2": 0.9908,
-      "MAPE": 11.88
+      "Model": "Multiple Linear Regression",
+      "Val_MAE": 51.26,
+      "Val_MSE": 6958.89,
+      "Val_RMSE": 83.42,
+      "Val_R2": 0.9987,
+      "Val_MAPE": 6.24,
+      "Val_Macro_RMSE": 76.72,
+      "Val_Macro_R2": 0.8149,
+      "CV_Train_RMSE": 205.93,
+      "Beats_Val_Baseline": true,
+      "Best_Params": "{}"
+    },
+    {
+      "Model": "Lasso Regression (L1)",
+      "Val_MAE": 54.52,
+      "Val_MSE": 7083.49,
+      "Val_RMSE": 84.16,
+      "Val_R2": 0.9987,
+      "Val_MAPE": 6.35,
+      "Val_Macro_RMSE": 78.32,
+      "Val_Macro_R2": 0.7906,
+      "CV_Train_RMSE": 210.62,
+      "Beats_Val_Baseline": true,
+      "Best_Params": "{\"alpha\": 10.0}"
     },
     {
       "Model": "Random Forest Regressor",
-      "MAE": 107.15,
-      "RMSE": 209.62,
-      "R2": 0.9924,
-      "MAPE": 10.64
+      "Val_MAE": 60.69,
+      "Val_MSE": 9046.2,
+      "Val_RMSE": 95.11,
+      "Val_R2": 0.9983,
+      "Val_MAPE": 7.0,
+      "Val_Macro_RMSE": 90.42,
+      "Val_Macro_R2": 0.7676,
+      "CV_Train_RMSE": 277.85,
+      "Beats_Val_Baseline": false,
+      "Best_Params": "{\"max_depth\": 6, \"min_samples_leaf\": 2, \"n_estimators\": 50}"
     },
     {
       "Model": "Gradient Boosting Regressor",
-      "MAE": 103.86,
-      "RMSE": 209.37,
-      "R2": 0.9924,
-      "MAPE": 10.08
+      "Val_MAE": 68.8,
+      "Val_MSE": 9233.26,
+      "Val_RMSE": 96.09,
+      "Val_R2": 0.9983,
+      "Val_MAPE": 7.88,
+      "Val_Macro_RMSE": 94.29,
+      "Val_Macro_R2": 0.6679,
+      "CV_Train_RMSE": 272.64,
+      "Beats_Val_Baseline": false,
+      "Best_Params": "{\"learning_rate\": 0.05, \"max_depth\": 3, \"n_estimators\": 100}"
     },
     {
       "Model": "Support Vector Regressor",
-      "MAE": 149.0,
-      "RMSE": 271.98,
-      "R2": 0.9872,
-      "MAPE": 14.53
+      "Val_MAE": 65.58,
+      "Val_MSE": 15680.71,
+      "Val_RMSE": 125.22,
+      "Val_R2": 0.997,
+      "Val_MAPE": 7.64,
+      "Val_Macro_RMSE": 103.38,
+      "Val_Macro_R2": 0.6516,
+      "CV_Train_RMSE": 475.02,
+      "Beats_Val_Baseline": false,
+      "Best_Params": "{\"C\": 500.0, \"epsilon\": 5.0}"
+    },
+    {
+      "Model": "Decision Tree Regressor",
+      "Val_MAE": 95.1,
+      "Val_MSE": 16174.25,
+      "Val_RMSE": 127.18,
+      "Val_R2": 0.9969,
+      "Val_MAPE": 9.97,
+      "Val_Macro_RMSE": 127.05,
+      "Val_Macro_R2": 0.4592,
+      "CV_Train_RMSE": 398.3,
+      "Beats_Val_Baseline": false,
+      "Best_Params": "{\"max_depth\": 4, \"min_samples_leaf\": 5}"
     }
   ]
 }

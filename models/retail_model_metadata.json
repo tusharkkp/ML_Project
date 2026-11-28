@@ -1,0 +1,28 @@
+{
+  "audit_timestamp": "2026-11-27 23:56:58",
+  "wholesale_sources": {
+    "AGMARKNET Historical Mandi Archive": 65841,
+    "data.gov.in AGMARKNET API (9ef84268-d588-465a-a308-a864a43d0070)": 5466
+  },
+  "retail_sources": {
+    "DCA Retail Monitoring Historical Archive": 38942,
+    "DCA Price Monitoring Bulletin (fcainfoweb.nic.in)": 245
+  },
+  "wholesale_archive_span": "2016-01-01 to 2018-12-31 (plus 2026-11-17 API snapshot)",
+  "retail_archive_span": "2010-01-01 to 2012-11-15 (plus 2026-11-17 bulletin & back-reference points)",
+  "exact_maharashtra_city_date_commodity_overlaps": {
+    "Mumbai": 0,
+    "Pune": 0,
+    "Nagpur": 0,
+    "Nashik": 0
+  },
+  "total_same_city_same_date_pairs": 0,
+  "cross_geography_same_date_rows": 1135,
+  "unique_common_dates_across_datasets": [
+    "2026-11-17"
+  ],
+  "minimum_required_longitudinal_dates": 30,
+  "retail_estimation_supported": false,
+  "status": "unavailable_insufficient_paired_data",
+  "explanation": "Cannot scientifically train or validate a longitudinal wholesale-to-retail ML estimator: exact Maharashtra same-city same-date overlap is 0 rows, and cross-geography date overlap spans only 1 date(s) (['2026-11-17']) because DCA multi-centre retail archives end in 2012-11-15 while AGMARKNET historical series span 2016-2018. Application uses actual observed DCA retail records or manual retail input, never wholesale/100 proxies."
+}

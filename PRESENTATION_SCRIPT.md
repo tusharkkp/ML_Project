@@ -4,7 +4,7 @@
 
 > **Examination:** Third-Year B.Tech AIML Practical Examination (**30 Marks Total** — Components A–I, CO1–CO4, Bloom's Levels L3–L5)  
 > **Problem Statement:** AI-Based Food Inflation Prediction and Household Affordability Monitoring System ([`Problem_statement.txt`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/Problem_statement.txt))  
-> **Commodities Modeled:** Tomato, Onion, Moong Dal (Pulses), Sugar — with zero-shot fallback generalization for Potato, Rice, Wheat, or custom items  
+> **Validated Commodities Modeled:** Tomato (`Pune`), Onion (`Pune`, `Lasalgaon`), Moong Dal (`Mumbai`), Sugar (`Mumbai`) — with strict metadata-backed `UnsupportedCommodityError` blocking unvalidated crops (backed by LOCO empirical check)  
 > **Syllabus Coverage:** 100% of [`ML_algos.txt`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/ML_algos.txt) (22 checklist items implemented across 29+ trained models/experiments)  
 > **Live Applications:** Streamlit Dashboard ([`app.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/app.py)), Gradio Web App ([`gradio_app.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/gradio_app.py)), CLI Inference Tools ([`scripts/test_unified_model.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/test_unified_model.py), [`scripts/test_model.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/test_model.py))  
 
@@ -72,25 +72,25 @@
 
 > *"The biggest trap in time-series ML is **lookahead data leakage**—for instance, using `train_test_split(shuffle=True)` or unshifted rolling windows. If January test rows sit beside February training rows that share a 7-day rolling mean, you get a fake 99% score that collapses in production.*
 >
-> *In **Notebook 03** and `scripts/build_features.py` (Components D & E), we engineered **16 strictly backward-looking numeric features** across three groups: autoregressive lags, shifted 7-day rolling statistics (`shift(1).rolling(7)` so today's target never peeks forward), supply arrival quantities, and monsoon/calendar indicators—plus `commodity_name`, `category`, and `is_perishable` when pooling into our **4,480-row Unified Feature Store**. We then partitioned chronologically—**70% Train (3,133 rows), 15% Validation (672 rows), and 15% Test (675 rows)**—and used expanding-window **`TimeSeriesSplit`** for grid search."*
+> *In **Notebook 03** and [`src/features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/features.py) / [`scripts/build_features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/build_features.py) (Components D & E), we engineered **16 strictly backward-looking numeric features** per exact single-market series: current session `modal_price_rs_per_qtl` ($P_t$), autoregressive lags ($P_{t-1}, P_{t-3}, P_{t-7}$), strictly shifted 7-session rolling statistics (`shift(1).rolling(7)` over $[t-7 \dots t-1]$ so today's target never peeks forward), supply arrival quantities, and monsoon/calendar indicators—plus `commodity_name`, `category`, `market_name`, and `is_perishable` when pooling into our **3,998-row leak-free Unified Feature Store** (`10` boundary-crossing rows purged). We partitioned strictly chronologically with shared date cutoffs—**Train = 2,800 rows (`2016-01-09..2018-02-15`)**, **Validation = 595 rows (`2018-02-17..2018-07-22`)**, **Test = 603 rows (`2018-07-24..2018-12-30`)**—tuned hyperparameters with `TimeSeriesSplit` inside Train, selected Champions strictly on Validation metrics, refitted on Train+Val, and evaluated once on untouched Test."*
 
 ### Part 4 — Algorithms, Training & Key Discoveries (5:15 – 7:15)
 *(Show `notebooks/04_regression_model_development.ipynb` and `notebooks/05_model_evaluation.ipynb`)*
 
 > *"Across **Notebooks 04 and 05** (Components F & G), we implemented every single algorithm category listed in `ML_algos.txt`—spanning 22 checklist items across regression, classification, ensembles, optimization, clustering, and PCA—and adopted a **Dual-Model Strategy**:*
-> 1. ***Universal Multi-Commodity Pipeline (`Ridge L2`, $\alpha=1.0$):** Combines `OneHotEncoder(handle_unknown='ignore')` and `StandardScaler` inside a `ColumnTransformer`. On 675 completely unseen test sessions spanning all four foods, it achieved **$R^2 = 0.9935$**, **MAE = ₹65.97/Qtl (~₹0.66/Kg)**, and **MAPE = 6.65%**—predicting Moong Dal within **0.36% MAPE** and Tomato/Onion within ~**10% MAPE**.*
-> 2. ***Dedicated Crop Specialists:** For **Tomato**, **Lasso ($L_1$)** won with **RMSE ₹93.35/Qtl** and **$R^2 = 0.8454$** (beating Naive Persistence ₹112.11) by zeroing out redundant correlated features (`price_lag_3`, `rolling_arrival_mean_7`, `is_monsoon_season`). For **Onion**, **SVR with an RBF kernel** won with **RMSE ₹179.06/Qtl** (beating Baseline ₹191.32) by modeling non-linear storage supply shocks.*
+> 1. ***Unified Multi-Commodity Pipeline (`Ridge L2`, $\alpha=1.0$):** Combines `OneHotEncoder(handle_unknown='ignore')` (`commodity_name`, `category`, `market_name`) and `StandardScaler` inside a `ColumnTransformer`. On 603 untouched chronological test sessions spanning all 5 exact series, it achieved Pooled **RMSE = ₹93.39/Qtl** (vs Persistence Baseline ₹97.99), Pooled $R^2 = 0.9986$, **Macro-Average RMSE = ₹77.03/Qtl** (vs Baseline ₹78.95), **Macro $R^2 = 0.8603$**, and **MAPE = 6.69%**—predicting Moong Dal within **0.29% MAPE** and beating persistence on volatile crops (Onion **+₹6.08**, Tomato **+₹8.65**).*
+> 2. ***Dedicated Crop Specialists:** Selected strictly on Validation RMSE (`TimeSeriesSplit` inside Train), **Lasso ($L_1$, $\alpha=10.0$)** won **Tomato @ Pune** (`131` test rows) with **RMSE ₹103.61/Qtl** and **$R^2 = 0.7957$** (beating Persistence ₹113.58 by **+₹9.97/Qtl**), and **Lasso ($L_1$, $\alpha=5.0$)** won **Onion @ Pune** (`130` test rows) with **RMSE ₹121.29/Qtl** and **$R^2 = 0.6661$** (beating Persistence ₹138.95 by **+₹17.66/Qtl**).*
 >
 > *Notice a fascinating empirical finding: **Linear regularized models outperformed Random Forest and Gradient Boosting** here. Why? Because tree ensembles cannot extrapolate outside the training price envelope, whereas Ridge and Lasso naturally follow linear autoregressive trends.*
 >
-> *We also benchmarked Gradient Descent optimizers (**Mini-batch GD batch=32** achieved the best test RMSE of **₹93.58/Qtl** over Batch GD ₹94.23 and SGD ₹95.23), 9 early-warning **Price Spike Classifiers** (where Gaussian Naive Bayes achieved **96.49% Recall** as a high-sensitivity safety net and Stacking reached **63.16% Accuracy** on Onion), and **Unsupervised Regime Segmentation** (K-Means $k=2$, Ward Hierarchical, DBSCAN isolating **71 anomalous trading days**, and PCA reducing 15 features to **8 components explaining 97.81% of variance**)."*
+> *We also benchmarked Gradient Descent optimizers (**Mini-batch GD batch=32** achieved **RMSE ₹104.82/Qtl**, $R^2=0.7909$ over Batch GD ₹105.03 and SGD ₹105.07 on Tomato), 10 specialist binary classifiers plus a **Global 3-Class Early-Warning Spike Classifier (`spike_classifier.joblib`: Normal / Surge >+10% / Crash <-10%)** where Validation-selected **Logistic Regression (Balanced)** achieved **82.35% Surge Recall** and **0.8117 Any-Spike ROC-AUC** (`0.4293` PR-AUC — honestly displayed with an experimental low-precision notice), and **Unsupervised Regime Segmentation** (K-Means $k=2$, Silhouette `0.5119`; Ward Hierarchical `0.5100`; DBSCAN `0.4808`)."*
 
 ### Part 5 — Live Production App & Engel's Law Demo (7:15 – 9:00)
 *(Switch to live Streamlit App `streamlit run app.py`)*
 
 > *"Finally, for **Rubric Component H (Deployment Readiness)**, I wrapped our serialized `joblib` pipelines and econometric calculator into a production-ready **Streamlit dashboard (`app.py`)** plus a free **Gradio version (`gradio_app.py`)** ready for Hugging Face Spaces.*
 >
-> *Let's test Module 1 live: if I select **Tomato** at ₹14/kg with 150 tonnes arriving in July, our Universal Ridge pipeline outputs tomorrow's wholesale and retail forecast along with a Surge/Crash/Stable alert in under 5 milliseconds without retraining.*
+> *Let's test Module 1 live: using **Historical Archive Replay** on **Tomato @ Pune** (or Live `data.gov.in` API fetch with strict zero-fabrication lag checks), our Unified Ridge pipeline forecasts the **next observed active trading session ($t+1$)** in ₹/Qtl along with mathematical Wholesale Equiv (`÷ 100` ₹/Kg), actual observed DCA retail references (never falsely labeling wholesale `÷ 100` as retail), and our Early-Warning ML regime probabilities—while our new **Market Comparison** tab compares Pune vs. Lasalgaon strictly on exact overlapping dates."*
 >
 > *Now switching to Module 2—**Household Food Affordability & Engel's Law Monitor**: if a household adjusts income—say from ₹30,000 down to ₹12,000—or increases grocery prices, our deterministic engine (`src/affordability.py`) computes the Food Budget Share percentage, Discretionary Balance Left, and plots the family's position directly against **NSSO HCES 2022–23 Rural (46.38%), Urban (39.17%), and Bottom-20% (56.6%)** vulnerability thresholds.*
 >
@@ -119,8 +119,8 @@ Most price-prediction demos stop at predicting a number ($R^2 = 0.85$) and ignor
 | **A. Data Collection** | 2 | CO1 / L3 | Multi-source government corpus (**189,413 records** across 5 datasets), REST APIs + HTML scraping + PDF table extraction | [`scripts/main.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/main.py), [`01_data_collection_overview.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/01_data_collection_overview.ipynb) |
 | **B. Statistical Summary** | 2 | CO1 / L3 | **7+ statistical operations** (Mean, Median, Std Dev, Variance, Min/Max, Quartiles/IQR, CV, Skewness, Kurtosis) across 4 food commodities | [`02_exploratory_data_analysis.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/02_exploratory_data_analysis.ipynb), [`reports/statistical_analysis.md`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/reports/statistical_analysis.md) |
 | **C. EDA & Visualization** | 2 | CO1 / L3 | **5 distinct visualization families** in EDA + **11 modeling diagnostic plots** (16 total PNGs at 300 DPI) | `reports/figures/*.png`, [`02_exploratory_data_analysis.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/02_exploratory_data_analysis.ipynb) |
-| **D. Data Preparation** | 2 | CO1 / L3 | Unit isolation (₹/Qtl vs ₹/Kg), anomalous bound flagging, deduplication, **16 zero-leakage backward features**, multi-commodity pooling (`4,480` rows) | [`scripts/build_features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/build_features.py), [`03_data_preprocessing.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/03_data_preprocessing.ipynb) |
-| **E. Splitting & CV** | 2 | CO2 / L3 | Strict chronological **70/15/15 Train/Val/Test** partitioning (`3,133 / 672 / 675`), scalar fitting on train-only, expanding `TimeSeriesSplit` | [`03_data_preprocessing.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/03_data_preprocessing.ipynb), [`scripts/train_and_evaluate.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_and_evaluate.py) |
+| **D. Data Preparation** | 2 | CO1 / L3 | Unit isolation (₹/Qtl vs ₹/Kg), anomalous bound flagging, deduplication, **16 zero-leakage backward features** per exact market, boundary-purged multi-commodity store (`3,998` rows) | [`src/features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/features.py), [`scripts/build_features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/build_features.py), [`03_data_preprocessing.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/03_data_preprocessing.ipynb) |
+| **E. Splitting & CV** | 2 | CO2 / L3 | Shared chronological **Train/Val/Test** partitioning with target-date boundary purging (`2,800 / 595 / 603`), `TimeSeriesSplit` inside Train, Validation-only selection | [`scripts/train_unified_model.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_unified_model.py), [`scripts/train_and_evaluate.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_and_evaluate.py) |
 | **F. ML Implementation** | 4 | CO2 / L4 | All 22 syllabus items in `ML_algos.txt` across 29+ trained models/experiments (Regression, Classification, Ensembles, GD, Clustering, PCA) + hyperparameter tuning | [`scripts/train_all_models.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_all_models.py), [`scripts/train_unified_model.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_unified_model.py), [`04_regression_model_development.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/04_regression_model_development.ipynb) |
 | **G. Model Evaluation** | 8 | CO3 / L5 | Unseen test evaluation (MAE, MSE, RMSE, $R^2$, MAPE, Accuracy, Precision, Recall, F1, ROC-AUC, Silhouette, Davies-Bouldin), baseline comparisons, residual diagnostics | [`05_model_evaluation.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/05_model_evaluation.ipynb), `reports/*.csv` |
 | **H. Deployment & Ethics** | 6 | CO4 / L5 | Serialized `joblib` + JSON contracts, zero-retraining inference engine, Streamlit 4-module app, free Gradio HF Spaces app, Engel's Law analyzer, `pytest` tests, ethical disclosures | [`app.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/app.py), [`gradio_app.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/gradio_app.py), [`src/inference.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/inference.py), [`src/affordability.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/affordability.py) |
@@ -231,7 +231,7 @@ In **Notebook 02** (`02_exploratory_data_analysis.ipynb`, Code Cell 5), we execu
 
 ### Step 2: All 18 Input Features (Unified Model) / 15 Features (Single-Crop Models)
 
-> **Crucial Zero-Leakage Implementation Rule:** In `scripts/build_features.py` (which produced `model_ready_unified_commodities.csv`, Onion, and the 1,039-row Tomato corpus) and Notebook 03, rolling window features execute `.shift(1).rolling(window=7, min_periods=4)` so window aggregates cover $[t-7 \dots t-1]$ without touching future target $P_{t+1}$!
+> **Crucial Zero-Leakage Implementation Rule:** In [`src/features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/features.py) and [`scripts/build_features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/build_features.py), all lag (`shift(1)`, `shift(3)`, `shift(7)`) and rolling stats (`.shift(1).rolling(window=7, min_periods=4)`) execute strictly inside each exact `(commodity_name, market_name)` series so rolling windows cover $[t-7 \dots t-1]$ while `modal_price_rs_per_qtl` stays strictly $P(t)$ — zero cross-market or future-target leakage!
 
 | # | Feature Name | Formula (`build_features.py`) | Category | Econometric Intuition |
 |---:|---|---|---|---|
@@ -252,19 +252,19 @@ In **Notebook 02** (`02_exploratory_data_analysis.ipynb`, Code Cell 5), we execu
 | 15 | `is_monsoon_season` | `1` if `month in [6,7,8,9]`, else `0` | Calendar / Weather | Binary southwest monsoon shock flag |
 | 16 | `is_perishable` *(Unified)* | `1` (Tomato/Onion), `0` (Sugar/Moong) | Structural Property | Teaches global model perishable vs. storable elasticity |
 | 17 | `commodity_name` *(Unified)* | Categoricals: Tomato, Onion, Moong Dal, Sugar | Categorical ID | One-Hot encoded baseline price offset per commodity |
-| 18 | `category` *(Unified)* | Vegetables, Pulses, Sugars & Sweets | Categorical Group | Hierarchical category intercept (`handle_unknown='ignore'` for unseen crops) |
+| 18 | `category` *(Unified)* | Vegetables, Pulses, Sugars & Sweets | Categorical Group | Hierarchical category intercept (`UnsupportedCommodityError` blocks unseen crops unless experimental flag set) |
 
 *(Note on Target Variables: Regression target `target_price_t_plus_1 = P.shift(-1)`; Classification target `is_price_spike = 1` if `|(P_{t+1} - P_t) / P_t| × 100% > 10%`, else `0`, split into `'Surge'` / `'Crash'` / `'Normal'` in `spike_direction`. Secondary `target_price_t_plus_7 = P.shift(-7)` is also computed for comparison.)*
 
-### Step 3: Pooling into Unified Multi-Commodity Corpus (`4,480` Rows)
+### Step 3: Pooling into Unified Multi-Commodity Corpus (`3,998` Clean Leak-Free Rows)
 
-In `scripts/build_features.py` (`build_unified_dataset()`), individually cleaned & chronologically split commodity series are pooled into [`model_ready_unified_commodities.csv`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/data/processed/model_ready_unified_commodities.csv) (**4,480 rows × 37 columns**):
+In [`scripts/build_features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/build_features.py) (`build_unified_dataset()`), 5 exact single-market commodity series are engineered independently, split using shared chronological cutoffs, and purged of **10 boundary-crossing rows**, producing [`model_ready_unified_commodities_clean.csv`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/data/processed/model_ready_unified_commodities_clean.csv) (**3,998 rows**):
 
-- **Onion:** **1,765** rows (Pune APMC 1,007 + Lasalgaon APMC 758)
-- **Tomato:** **1,039** rows (Pune APMC & sub-markets)
-- **Moong Dal:** **854** rows (Maharashtra APMCs)
-- **Sugar:** **822** rows (Maharashtra APMCs)
-- **Note on Single-Yard Tomato Script:** [`scripts/preprocess_and_prepare_data.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/preprocess_and_prepare_data.py) builds an **873-row** exact-`"Pune"` subset (`model_ready_pune_tomato.csv`: `611 Train / 130 Val / 132 Test`) using `price_lag_1 = P(t)` as today's anchor, while `build_features.py` pools Pune sub-yards (Gultekdi/Pimpri/Hadapsar) yielding `1,039` rows (`156` test sessions, used to fit `price_prediction_model_tomato.joblib`). Similarly, NB03's inline demonstration groups Onion Pune+Lasalgaon onto one daily timeline producing `3,755` rows, while the production unified feature store (`4,480` rows) preserves Pune and Lasalgaon Onion as distinct series for higher volume.
+- **Onion:** **Pune APMC (`859` standalone / `~855` after purging) + Lasalgaon APMC (`628` standalone)**
+- **Tomato:** **Pune APMC (`870` standalone exact yard)**
+- **Moong Dal:** **Mumbai APMC (`832` standalone)**
+- **Sugar:** **Mumbai APMC (`819` standalone)**
+- **Exact Single-Market Discipline (`v3.0.0-leakfree`):** [`src/features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/features.py) strictly preserves single APMC yards (`allow_submarket_aggregation=False`: `Pune` Tomato = **870 rows**, `Pune` Onion = **859 rows**, `Lasalgaon` Onion = **628 rows**, `Mumbai` Moong Dal = **832 rows**, `Mumbai` Sugar = **819 rows**) without silently combining sub-markets (`Pimpri`/`Hadapsar`), and [`scripts/preprocess_and_prepare_data.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/preprocess_and_prepare_data.py) delegates cleanly to this same leak-free pipeline.
 
 ---
 
@@ -286,7 +286,7 @@ CORRECT (Strict Chronological Partitioning):
 
 ### Verified Partition Counts & Scaling Discipline
 
-- **Unified Feature Store (`4,480` rows):** **Train = 3,133** (Moong 597, Onion 1,234, Sugar 575, Tomato 727) | **Validation = 672** (Moong 128, Onion 265, Sugar 123, Tomato 156) | **Test = 675** (Moong 129, Onion 266, Sugar 124, Tomato 156). Note that each commodity was split chronologically *before* pooling so no future crop leak occurs across commodities either!
+- **Unified Feature Store (`3,998` rows after `10` boundary rows purged):** **Train = 2,800** (`2016-01-09..2018-02-15`) | **Validation = 595** (`2018-02-17..2018-07-22`) | **Test = 603** (`2018-07-24..2018-12-30`). Shared global date cutoffs plus target-date boundary purging guarantee **zero future date overlap** across all 5 series simultaneously!
 - **Feature Scaling Discipline:** `StandardScaler().fit()` is called **strictly on Training features** ($\mu_{\text{train}}, \sigma_{\text{train}}$), and `.transform()` applies those training parameters to Validation and Test sets—preventing future distribution leakage. Inside [`ColumnTransformer`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_unified_model.py), this guarantees zero leakage even inside CV folds.
 - **Cross-Validation (`TimeSeriesSplit(n_splits=5)`):** Standard $k$-fold shuffles past and future folds. We use **expanding-window `TimeSeriesSplit`** (shown in [`scripts/train_and_evaluate.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_and_evaluate.py)) where Fold 1 trains on early months to validate the next forward window, Fold 2 expands the training window forward, and no training fold ever peeks ahead of its validation block.
 
@@ -297,7 +297,7 @@ CORRECT (Strict Chronological Partitioning):
 ### How Models Were Trained & Tuned
 
 1. **Dual-Model Production Strategy:**
-   - **Global Universal Model ([`scripts/train_unified_model.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_unified_model.py)):** Trains one `Pipeline([('preprocessor', ColumnTransformer), ('regressor', model)])` on `4,480` pooled rows across 8 candidate regressors (`MLR`, `Ridge`, `Lasso`, `ElasticNet`, `Decision Tree`, `Random Forest`, `Gradient Boosting`, `SVR`). `OneHotEncoder(handle_unknown='ignore', sparse_output=False)` encodes `commodity_name` + `category` (7 columns) while `StandardScaler` normalizes the 16 numeric columns $\to$ **23 features fed into Ridge ($\alpha=1.0$)**.
+   - **Unified Multi-Commodity Model ([`scripts/train_unified_model.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_unified_model.py)):** Trains one `Pipeline([('preprocessor', ColumnTransformer), ('regressor', model)])` on `3,998` boundary-purged rows across 8 candidate regressors (`MLR`, `Ridge`, `Lasso`, `ElasticNet`, `Decision Tree`, `Random Forest`, `Gradient Boosting`, `SVR`). `OneHotEncoder(handle_unknown='ignore', sparse_output=False)` encodes `commodity_name`, `category`, and `market_name` alongside 17 standardized numeric features. Champions are selected strictly on **Validation RMSE** (`Ridge L2`, $\alpha=1.0$, `Val_RMSE=Rs. 83.22/Qtl`), refitted on Train+Val, and evaluated once on untouched Test (`603` rows).
    - **Dedicated Crop Specialists ([`scripts/train_all_models.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/train_all_models.py)):** Trains all **22 syllabus items from `ML_algos.txt`** across **29+ individual model runs** (1 Baseline + 12 Regressors + 3 GD Optimizers + 9 Classifiers + 3 Clustering + 1 PCA) on both **Tomato** (`price_prediction_model_tomato.joblib`) and **Onion** (`price_prediction_model_onion.joblib`), writing standardized artifacts to `models/` and `reports/*.csv`.
 2. **Hyperparameter Tuning Choices:**
    - **Polynomial Regression (`train_and_evaluate.py`):** Tuned degree $d \in \{1, 2, 3\}$ and Ridge penalty $\alpha \in \{0.01, 0.1, 1.0, 10.0, 100.0\}$. Expanding 15 features to $d=2$ generates **135 terms** and $d=3$ generates **800+ terms**, causing overfitting on $\sim$600–880 rows (**Curse of Dimensionality**). We constrained polynomial expansion to **$d=2$ paired with Ridge $\alpha=10.0$**.
@@ -336,11 +336,11 @@ Ridge Regression (L2, alpha=1.0, Intercept = ₹2,830.72)
 - **Classification Metrics:** Accuracy, Precision ($\frac{TP}{TP+FP}$), Recall ($\frac{TP}{TP+FN}$), F1-Score, Confusion Matrix, and **ROC-AUC** (ranking ability across thresholds).
 - **Clustering Metrics:** **Silhouette Score** ($[-1, +1]$, higher = tighter & better-separated clusters) and **Davies-Bouldin Index** (lower = better separation).
 
-### 9.2 Unified Multi-Commodity Model Leaderboard (675 Unseen Test Sessions)
+### 9.2 Unified Multi-Commodity Model Leaderboard (603 Untouched Test Sessions)
 
 | Rank | Algorithm (`train_unified_model.py`) | MAE (₹/Qtl) | RMSE (₹/Qtl) | $R^2$ Score | MAPE (%) | Assessment |
 |:---:|---|---:|---:|---:|---:|---|
-| 1 | **Ridge Regression (L2, $\alpha=1.0$)** | **65.97** | **194.64** | **0.9935** | 6.65% | **CHAMPION** (Lowest RMSE & MAE; ₹0.66/Kg avg error) |
+| 1 | **Ridge Regression (L2, $\alpha=1.0$)** | **55.27** | **93.39** | **0.9986** | 6.69% | **CHAMPION (Validation-Selected)** (Beats Persistence RMSE 97.99; Macro RMSE 77.03, Macro R² 0.8603) |
 | 2 | **Multiple Linear Regression** | 66.38 | 194.70 | 0.9934 | **6.61%** | Virtually identical to Ridge; slightly higher RMSE variance |
 | 3 | **Lasso Regression (L1, $\alpha=0.5$)** | 66.37 | 194.71 | 0.9934 | 6.62% | Sparse feature selection matches OLS |
 | 4 | **ElasticNet ($\alpha=0.1, l_1=0.5$)** | 79.93 | 198.47 | 0.9932 | 8.06% | Over-shrunk due to higher $\alpha$ |
@@ -349,40 +349,43 @@ Ridge Regression (L2, alpha=1.0, Intercept = ₹2,830.72)
 | 7 | **Decision Tree Regressor (`depth=10`)** | 125.90 | 230.80 | 0.9908 | 11.88% | Step-function predictions create staircase errors |
 | 8 | **Support Vector Regressor (RBF)** | 149.00 | 271.98 | 0.9872 | 14.53% | RBF struggles across discontinuous ₹700–₹7,000 plateaus |
 
-#### Per-Commodity Breakdown of Champion Unified Ridge Pipeline (675 Test Rows)
+#### Per-Commodity Breakdown of Champion Unified Ridge Pipeline (603 Test Rows)
 
 | Commodity | Category | Test Samples | Mean Price (₹/Qtl) | Test MAE (₹/Qtl) | MAE (₹/Kg) | Test RMSE (₹/Qtl) | Test $R^2$ | Test MAPE |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | **Moong Dal** | Pulses | 129 | 7,013.95 | **25.14** | **₹0.25** | 47.74 | **0.9833** | **0.36%** |
-| **Sugar** | Sugars & Sweets | 124 | 3,222.32 | 40.98 | ₹0.41 | 177.63 | **0.0560** | **1.10%** |
-| **Tomato** | Vegetables | 156 | 761.06 | 72.34 | ₹0.72 | 95.46 | **0.8384** | 10.11% |
-| **Onion** | Vegetables | 266 | 909.19 | 93.68 | ₹0.94 | 273.83 | 0.4770 | 10.25% |
-| **OVERALL** | **All Groups** | **675** | — | **65.97** | **₹0.66** | **194.64** | **0.9935** | **6.65%** |
+| **Moong Dal** | Pulses | 123 | 7,034.15 | 20.65 | ₹0.21 | 45.25 | **0.9847** | **0.29%** |
+| **Sugar** | Sugars & Sweets | 121 | 3,205.61 | 27.18 | ₹0.27 | 35.59 | **0.8170** | **0.85%** |
+| **Tomato** | Vegetables | 131 | 706.87 | 78.11 | ₹0.78 | 104.93 | **0.7905** | 12.25% |
+| **Onion** | Vegetables | 228 | 867.50 | 75.72 | ₹0.76 | 122.33 | **0.8490** | 10.04% |
+| **POOLED / MACRO** | **All Groups** | **603** | — | **55.27 / 50.42** | **₹0.55 / ₹0.50** | **93.39 / 77.03** | **0.9986 / 0.8603** | **6.69% / 5.86%** |
 
-*Residual Check (Notebook 05 Cell 8): Mean residual on 675 test rows = **₹1.02/Qtl** (nearly zero bias), Std Dev = **₹194.64/Qtl**.*
+*Note: Moong Dal Test breakdown (123 rows): RMSE ₹45.25 vs Persistence ₹42.29; Onion (228 rows): RMSE ₹122.33 vs ₹128.41 (+6.08 improvement); Sugar (121 rows): ₹35.59 vs ₹31.52; Tomato (131 rows): ₹104.93 vs ₹113.58 (+8.65 improvement).*
 
 ### 9.3 Dedicated Crop Specialist Benchmarks (`model_metadata_tomato.json` & `onion`)
 
-- **Tomato Specialist (`156` unseen test rows from 1,039 Pune series):**
-  - **Champion: Lasso Regression ($L_1$)** — MAE **₹68.66**, RMSE **₹93.35**, $R^2 = \mathbf{0.8454}$, MAPE **9.36%**.
+- **Tomato Specialist (`131` untouched test rows from `870`-row exact-Pune series):**
+  - **Champion (Validation-Selected): Lasso Regression ($L_1$, $\alpha=10.0$)** — MAE **₹75.95**, RMSE **₹103.61**, $R^2 = \mathbf{0.7957}$, MAPE **11.99%** (beats Persistence ₹113.58 by +₹9.97/Qtl).
   - **Beats Naive Persistence Baseline** ($y_{t+1} = y_t$): MAE ₹83.17, RMSE ₹112.11, $R^2 = 0.7771$, MAPE 11.25% (a **₹18.76/Qtl RMSE reduction!**).
   - *(Note: On the `873`-row exact-Pune subset tested in Notebook 05 Cell 6 (`132` test rows), Lasso still beats that subset's Naive Baseline: RMSE **₹111.45 vs ₹114.48**, $R^2$ **0.7647 vs 0.7518**.)*
   - Poor performers on Tomato test: KNN ($k=7$) RMSE ₹221.38 ($R^2=0.1307$), SVR RMSE ₹184.16, AdaBoost RMSE ₹161.72, Decision Tree RMSE ₹158.83.
-- **Onion Specialist (`152` unseen test rows from `1,007` Pune series):**
-  - **Champion: SVR (RBF Kernel)** — MAE **₹92.68**, RMSE **₹179.06**, $R^2 = \mathbf{0.3446}$, MAPE **9.10%**.
+- **Onion Specialist (`130` untouched test rows from `859`-row exact-Pune series):**
+  - **Champion (Validation-Selected): Lasso Regression ($L_1$, $\alpha=5.0$)** — MAE **₹76.88**, RMSE **₹121.29**, $R^2 = \mathbf{0.6661}$, MAPE **8.96%** (beats Persistence ₹138.95 by +₹17.66/Qtl).
   - **Beats Naive Persistence Baseline:** MAE ₹97.70, RMSE ₹191.32, $R^2 = 0.2518$, MAPE 9.45%.
   - Lasso (RMSE ₹182.91), Ridge (RMSE ₹183.21), MLR (RMSE ₹183.58), and Stacking (RMSE ₹184.83) followed closely, while Decision Tree overfit badly ($R^2 = -2.3169$).
 
 ### 9.4 Optimization, Classification & Clustering Results (`reports/*.csv`)
 
 1. **Gradient Descent Optimization (`gradient_descent_comparison_tomato.csv`, 500 epochs on test set):**
-   - **Mini-batch GD (`batch=32`):** MAE **₹69.01**, RMSE **₹93.58**, $R^2 = \mathbf{0.8447}$ — **Winner** (fastest stable convergence).
+   - **Mini-batch GD (`batch=32`):** MAE **₹76.82**, RMSE **₹104.82**, $R^2 = \mathbf{0.7909}$ — **Winner** (fastest stable convergence).
    - **Batch GD:** MAE ₹69.72, RMSE **₹94.23**, $R^2 = 0.8425$ — smooth monotonic descent.
    - **Stochastic GD (SGD):** MAE ₹70.54, RMSE **₹95.23**, $R^2 = 0.8392$ — noisy oscillations on single-sample updates.
    - *(On Notebook 04's 200-epoch validation test: Mini-batch ₹124.73 < Batch ₹128.28 < SGD ₹149.77.)*
 2. **Price Spike Classification (`is_price_spike`, $\pm 10\%$ threshold):**
-   - **Tomato (`classification_comparison_tomato.csv`, 156 test sessions):**
-     - **Gaussian Naive Bayes:** Highest **Recall = 96.49%** & **F1 = 0.5392** (Acc 39.74%, AUC 0.4618) — acts as a high-sensitivity crisis safety net.
+   - **Tomato (`classification_comparison_tomato.csv`, 131 test sessions):**
+     - **Bagging Classifier (`Val_Threshold=0.35`):** Selected on Validation — Test `Acc=0.4580`, `F1=0.6162`, `ROC-AUC=0.5704`, `PR-AUC=0.5162` (beats Majority Baseline `Acc=0.4427`, `F1=0.6138`).
+   - **Global 3-Class Early-Warning Classifier (`spike_classifier.joblib`, 603 test sessions):**
+     - **Logistic Regression (Balanced, C=10.0):** `Test Acc=0.6003` (vs Majority Baseline `0.7811`), `Macro-F1=0.4946`, `Any-Spike ROC-AUC=0.8117`, `PR-AUC=0.4293` (Surge Recall `82.35%`, flagged honestly as low-precision experimental).
      - **AdaBoost Classifier:** Highest **Accuracy = 52.56%** (Prec 38.36%, Recall 49.12%, AUC 0.5178).
      - **Logistic Regression:** Highest **ROC-AUC = 0.5249** (Acc 47.44%, Recall 66.67%, F1 0.4810).
    - **Onion (`classification_comparison.csv`, 152 test sessions):**
@@ -401,7 +404,8 @@ Ridge Regression (L2, alpha=1.0, Intercept = ₹2,830.72)
 
 1. **Zero-Retraining Inference Engine ([`src/inference.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/inference.py)):**
    - `UnifiedCommodityPredictor` loads [`models/unified_food_price_model.joblib`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/models/unified_food_price_model.joblib) + [`unified_model_metadata.json`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/models/unified_model_metadata.json) once into memory (cached via `@st.cache_resource` in Streamlit).
-   - Supports full 18-feature input OR minimal input (`commodity`, `current_price`, `arrivals`, `month`, `day_of_week`) where plausible lag heuristics and keyword category/perishability inference (`infer_category_and_perishability()`) auto-fill the feature vector—allowing unseen commodities like **Potato** or **Rice** to run smoothly via `handle_unknown='ignore'`.
+   - Supports full validated 20-feature replay (`Historical Archive Replay` & `Live API Fetch` via `data.gov.in` with strict multi-year gap protection), manual exploration (`allow_manual_approx=True`), AND blocks unseen crops (`Potato`, `Rice`) cleanly with `UnsupportedCommodityError` unless explicit experimental override is checked.
+   - Added **Module 2 (`Market Comparison`)** powered by [`src/market_comparison.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/market_comparison.py) comparing exact markets, Mon-Sat coverage, volatility, arrivals, and inner-join overlapping spreads.
    - `CommodityPricePredictor` serves the dedicated crop specialists (`Tomato` Lasso / `Onion` SVR).
 2. **Streamlit Dashboard ([`app.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/app.py)) — 4 Live Modules:**
    - **Module 1 (`🔮 Commodity Price Forecaster`):** Forecasts $t+1$ price in ₹/Qtl & ₹/Kg, shift %, Surge/Crash/Stable banner, optional lag overrides, comparison bar plot.
@@ -453,8 +457,8 @@ Here is every algorithm from [`ML_algos.txt`](file:///c:/Users/Tushar%20Kaldate/
 2. **Simple Linear Regression (SLR):** Fits one line $\hat{y} = \beta_0 + \beta_1 x$ using only `price_lag_1`. *Project finding:* Unscaled Tomato equation $\text{Price}_{t+1} = 0.958 \cdot P_t + 56.08$ proves extreme first-order autoregression, though missing supply/volatility cues.
 3. **Multiple Linear Regression (MLR):** Fits $\hat{y} = \beta_0 + \sum_{j=1}^p \beta_j x_j$ via Ordinary Least Squares (OLS) minimizing $\sum(y_i - \hat{y}_i)^2$. *Project result:* Huge leap to RMSE **₹94.08** on Tomato (`R²=0.8430`) and **₹194.70** (`R²=0.9934`) on Unified, but unregularized weights risk instability under lag collinearity.
 4. **Polynomial Regression (Degree 2):** Expands features via `PolynomialFeatures(degree=2)` ($x_i^2, x_i x_j$) before fitting regularized linear regression. *Project finding:* Captures curved interactions, but expands 15 features $\to$ 135 terms (overfits beyond degree 2 due to **Curse of Dimensionality**).
-5. **Ridge Regression ($L_2$ Regularization) — CHAMPION UNIFIED MODEL:** Minimizes $\sum(y_i - \hat{y}_i)^2 + \alpha \sum_{j=1}^p \beta_j^2$. Shrinks correlated feature weights proportionally toward zero (never strictly zero). *Why it won (**MAE ₹65.97, RMSE ₹194.64, R² 0.9935**):* Stabilizes correlated lags + one-hot commodity offsets simultaneously.
-6. **Lasso Regression ($L_1$ Regularization) — CHAMPION TOMATO SPECIALIST:** Minimizes $\sum(y_i - \hat{y}_i)^2 + \alpha \sum_{j=1}^p |\beta_j|$. Sharp diamond $L_1$ constraint forces uninformative coefficients to **exact zero** (automatic feature selection). *Why it won on Tomato (**RMSE ₹93.35, R² 0.8454**):* Eliminated `price_lag_3`, `rolling_arrival_mean_7`, and `is_monsoon_season` cleanly.
+5. **Ridge Regression ($L_2$ Regularization) — CHAMPION UNIFIED MODEL:** Minimizes $\sum(y_i - \hat{y}_i)^2 + \alpha \sum_{j=1}^p \beta_j^2$. Shrinks correlated feature weights proportionally toward zero (never strictly zero). *Why it won (**MAE ₹55.27, RMSE ₹93.39, Pooled R² 0.9986, Macro R² 0.8603**):* Stabilizes correlated lags + one-hot commodity/market offsets simultaneously, beating pooled persistence (₹97.99).
+6. **Lasso Regression ($L_1$ Regularization) — CHAMPION SPECIALIST MODEL (TOMATO & ONION):** Minimizes $\sum(y_i - \hat{y}_i)^2 + \alpha \sum_{j=1}^p |\beta_j|$. Sharp diamond $L_1$ constraint forces uninformative collinear coefficients to **exact zero** (automatic feature selection). *Why it won (**Tomato RMSE ₹103.61 vs ₹113.58; Onion RMSE ₹121.29 vs ₹138.95**):* Eliminated noisy lag redundancy cleanly under `TimeSeriesSplit` CV.
 7. **ElasticNet Regression *(Unified Benchmark)*:** Combines both penalties: $\alpha \cdot l_1 \sum |\beta_j| + \frac{\alpha(1-l_1)}{2}\sum \beta_j^2$ (`alpha=0.1, l1_ratio=0.5`). Balances grouped shrinkage ($L_2$) and sparsity ($L_1$). Achieved `R²=0.9932` on Unified.
 
 ### B. Optimization Algorithms (How Linear Weights Are Learned Iteratively)
@@ -462,17 +466,17 @@ Here is every algorithm from [`ML_algos.txt`](file:///c:/Users/Tushar%20Kaldate/
 Instead of solving OLS via matrix inversion $(X^TX)^{-1}X^Ty$, iterative optimizers walk downhill on MSE Loss $\theta_{k+1} = \theta_k - \eta \nabla L(\theta_k)$:
 8. **Batch Gradient Descent:** Computes gradient over **all $N$ training rows** per epoch. *Behavior:* Smooth, deterministic, monotonic loss curve; slower on huge datasets (**Test RMSE ₹94.23/Qtl**).
 9. **Stochastic Gradient Descent (SGD):** Updates weights using **1 sample** at a time (`SGDRegressor`). *Behavior:* Fast updates, jagged oscillating loss curve that helps jump shallow plateaus (**Test RMSE ₹95.23/Qtl**).
-10. **Mini-batch Gradient Descent (`batch_size=32`):** Uses **32 randomly permuted rows** per `partial_fit()` step. *Behavior:* Combines matrix vectorization speed with mild noise regularization — achieved the **lowest GD Test RMSE (₹93.58/Qtl, $R^2=0.8447$)**.
+10. **Mini-batch Gradient Descent (`batch_size=32`):** Uses **32 randomly permuted rows** per `partial_fit()` step. *Behavior:* Combines matrix vectorization speed with mild noise regularization — achieved the **lowest GD Test RMSE (₹104.82/Qtl, $R^2=0.7909$)** on Tomato.
 
 ### C. Classification Algorithms (Binary Price Spike Detection `|>10%|`)
 
 11. **Logistic Regression:** Linear combination passed through sigmoid $\sigma(z) = \frac{1}{1+e^{-z}} \in (0,1)$, trained via Log-Loss (Cross-Entropy). *Result:* Highest Tomato **ROC-AUC (0.5249)** and solid 66.7% recall with `class_weight='balanced'`.
-12. **Gaussian Naive Bayes:** Applies Bayes' Theorem $P(y|X) \propto P(y)\prod P(x_j|y)$ assuming conditional independence & Gaussian feature densities. *Result:* **96.49% Recall** (F1 `0.5392`) — catches almost every tomato surge at the cost of false alarms.
+12. **Gaussian Naive Bayes:** Applies Bayes' Theorem $P(y|X) \propto P(y)\prod P(x_j|y)$ assuming conditional independence & Gaussian feature densities. *Result:* High recall (100% on specialist Tomato threshold 0.25; 49.7% macro recall globally) with lower precision — useful as a baseline probability comparator.
 13. **K-Nearest Neighbors (KNN Classifier & Regressor):** Instance-based ("lazy") learner predicting by majority vote (`k=5` clf) or Euclidean distance-weighted average (`k=7` reg) of nearest standardized neighbors. *Limitation:* Degrades in 15D+ spaces and fails to extrapolate trending prices (Tomato Reg RMSE ₹221.38).
 14. **Decision Tree (CART — Classification & Regression Tree):** Recursively splits feature space into orthogonal thresholds minimizing **Gini Impurity** (classification) or **MSE variance** (regression). *Pros/Cons:* Interpretable rules, prone to staircase overfitting on unseen price peaks (`max_depth` tuned).
 15. **Support Vector Machine (SVC & SVR with RBF Kernel) — CHAMPION ONION SPECIALIST:**
     - **SVC** maximizes the hyperplane margin $\frac{2}{\|w\|}$ between classes after projecting points via **RBF Kernel** $K(x, x') = \exp(-\gamma\|x-x'\|^2)$.
-    - **SVR** fits a regression function inside an **$\epsilon$-insensitive tube** (only errors $> \epsilon=10$ are penalized, weighted by $C=100$). Won Onion (**RMSE ₹179.06**, $R^2=0.3446$) by fitting smooth non-linear storage curves.
+    - **SVR** fits a regression function inside an **$\epsilon$-insensitive tube**. While smooth, regularized linear models (**Lasso**) outperformed RBF SVR on both Onion (**₹121.29 vs ₹137.20 RMSE**) and Tomato (**₹103.61 vs ₹139.60 RMSE**) under strict chronological Validation selection.
 
 ### D. Ensemble Learning Methods (Combining Multiple Learners)
 
@@ -520,7 +524,7 @@ Instead of solving OLS via matrix inversion $(X^TX)^{-1}X^Ty$, iterative optimiz
 - **Regularization ($L_1$ vs $L_2$):** Penalizing large model weights to curb variance. $L_2$ (Ridge) shrinks weights smoothly; $L_1$ (Lasso) forces redundant weights to exact zero.
 - **Curse of Dimensionality:** Rapid feature explosion ($15 \to 135 \to 800+$ polynomial terms) making fixed sample counts sparse and causing distances (KNN) & OLS fits to degrade.
 - **`ColumnTransformer` & `Pipeline`:** Scikit-learn wrappers chaining column-specific preprocessing (`OneHotEncoder` + `StandardScaler`) directly with the estimator inside a single atomic object—preventing inference schema drift and CV leakage.
-- **`handle_unknown='ignore'`:** Encoder setting ensuring unseen categories (like Potato or Rice) map cleanly to an all-zero dummy vector instead of raising `ValueError`.
+- **`UnsupportedCommodityError` Guard (Backed by LOCO Check):** Because `OneHotEncoder(handle_unknown='ignore')` alone failed Leave-One-Commodity-Out persistence baselines on 3/4 held-out crops, production inference validates commodity names against `unified_model_metadata.json` and rejects unseen crops unless an explicit experimental sandbox flag is passed.
 - **Kernel Trick (RBF):** Implicitly mapping non-linear inputs into higher-dimensional space using Radial Basis Functions so linear separators/tubes fit curved relationships.
 - **Confusion Matrix ($TP, FP, TN, FN$):** Table of predicted vs. actual classes; **Recall** catches real crises ($TP/(TP+FN)$), **Precision** avoids false alarms ($TP/(TP+FP)$).
 - **Joblib & Pydantic v2:** `joblib` serializes NumPy-heavy `scikit-learn` pipelines efficiently; `Pydantic` validates strict REST input types/bounds (`gt=0`) before inference.
@@ -533,11 +537,11 @@ Instead of solving OLS via matrix inversion $(X^TX)^{-1}X^Ty$, iterative optimiz
 
 | Notebook | Covers Rubric | Key Executed Walkthrough for Faculty |
 |---|---|---|
-| [`01_data_collection_overview.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/01_data_collection_overview.ipynb) | **A & B** | Inspects all **5 processed CSVs (189,413 rows)** + `model_ready_unified_commodities.csv` (`4,480` rows), displays multi-commodity stats, arrival tonnage, retail markups, CPI, HCES fractiles. |
+| [`01_data_collection_overview.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/01_data_collection_overview.ipynb) | **A & B** | Inspects all **5 processed CSVs (189,413 rows)** + `model_ready_unified_commodities_clean.csv` (`3,998` leak-free rows), displays multi-commodity stats, arrival tonnage, retail audit overlap, CPI, HCES fractiles. |
 | [`02_exploratory_data_analysis.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/02_exploratory_data_analysis.ipynb) | **B & C** | Computes **7+ descriptive stats** across Tomato, Onion, Moong Dal, Sugar; renders **5 visualizations** (timeseries, KDE histograms, Tukey boxplots, crop-calendar seasonality, correlation heatmap). |
 | [`03_data_preprocessing.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/03_data_preprocessing.ipynb) | **D & E** | Verifies anomalies/duplicates removed (`168` dupes), builds zero-leakage `engineer_commodity_features()`, verifies chronological 70/15/15 split timelines graphically across all 4 commodities. |
 | [`04_regression_model_development.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/04_regression_model_development.ipynb) | **F** | Trains Baseline + **13 regressors** on validation set, extracts `SLR` equation, benchmarks **Batch/SGD/Mini-batch GD** loss curves over 200 epochs, and trains the **Unified Cross-Commodity Pipeline**. |
-| [`05_model_evaluation.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/05_model_evaluation.ipynb) | **G & H** | Evaluates **Unified Ridge** on 675 unseen test rows (`R²=0.9935`), breaks down all 4 commodities, verifies Tomato & Onion specialists beat Baseline, checks residuals (+₹1.02 mean), shows **9 classifiers**, **Clustering/PCA**, and simulates Urban ₹30k vs ₹12k household affordability shocks. |
+| [`05_model_evaluation.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/05_model_evaluation.ipynb) | **G & H** | Evaluates **Unified Ridge** on 603 untouched test rows (Pooled `R²=0.9986`, **Macro `R²=0.8603`**, RMSE `₹93.39` vs Persistence `₹97.99`), breaks down all 4 commodities, verifies Tomato & Onion Lasso specialists beat Persistence, checks Global Early-Warning PR-AUC (`0.4293`), and simulates Household Affordability under HCES benchmarks. |
 
 ### Repository Tree (`scripts/`, `src/`, `models/`, `tests/`)
 
@@ -558,7 +562,7 @@ ML_Project/
 ├── notebooks/                          # 5 pre-rendered Jupyter Notebooks (01–05)
 ├── models/                             # Serialized joblib pipelines & JSON metadata contracts
 │   ├── unified_food_price_model.joblib # Champion Universal Ridge L2 Pipeline
-│   ├── unified_model_metadata.json     # 675-test metrics & feature schema
+│   ├── unified_model_metadata.json     # 603-test metrics, macro-avg, LOCO & feature schema
 │   ├── price_prediction_model_tomato.joblib  # Tomato Specialist (Lasso L1)
 │   └── price_prediction_model_onion.joblib   # Onion Specialist (SVR RBF) + default symlink copy
 │
@@ -589,9 +593,9 @@ ML_Project/
 
 ## 14. Hard Faculty Viva Questions & Model Answers (With Honest Tradeoffs)
 
-### Q1: Why is `R²` 0.9935 on the Unified Model while Sugar's per-commodity `R²` is only 0.0560 and Onion is 0.4770? Does `0.0560` mean Sugar failed?
+### Q1: Why is pooled `R²` 0.9986 on the Unified Model while individual commodity `R²` is lower (`0.7905` on Tomato, `0.8170` on Sugar), and how does it compare to Naive Persistence?
 **Answer:** No—this is a classic statistical scaling effect of the $R^2 = 1 - \frac{\text{SS}_{res}}{\text{SS}_{tot}}$ formula!
-- In the **Unified test set (675 rows)**, prices span from ~₹200/Qtl (Tomato) to ~₹9,500/Qtl (Moong Dal), making total variance $\text{SS}_{tot}$ enormous. Because our one-hot encoded Ridge model nails each commodity's price level, global $R^2$ is **0.9935**.
+- In the **Unified test set (603 rows)**, prices span from ~₹200/Qtl (Tomato/Onion) to ~₹7,600/Qtl (Moong Dal), making total variance $\text{SS}_{tot}$ enormous. Because our one-hot encoded Ridge model nails each commodity's base price level, global pooled $R^2$ is **0.9986**, while the unweighted **Macro-Average $R^2$ is 0.8603** (and Onion/Tomato beat persistence RMSE cleanly, whereas sticky staples Sugar/Moong Dal trail persistence slightly).
 - Inside **Sugar alone**, government FRP mandates and mill quotas keep Sugar almost flat within ~₹200/Qtl across the test set, making $\text{SS}_{tot}$ tiny. Any minor daily fluctuation yields a low $R^2$, **yet Sugar's MAPE is an outstanding 1.10% (only ₹40.98/Qtl or ₹0.41/Kg error!)**. That proves why you must pair $R^2$ with **MAPE and MAE**.
 
 ### Q2: Why did Linear Regularized Models (Ridge / Lasso) beat Random Forest and Gradient Boosting on your Unified Dataset?
@@ -601,9 +605,9 @@ ML_Project/
 
 ### Q3: Why did Lasso win Tomato Specialist while Ridge won the Unified Model and SVR won Onion?
 **Answer:** Each regularizer matches a different data geometry:
-- **Tomato Specialist (`15` numerical features):** Has noisy redundant features (e.g., `price_lag_3`, 7-day average arrivals). **Lasso ($L_1$)** zeroed those three out cleanly to lower test RMSE to **₹93.35**.
+- **Tomato Specialist (`16` numerical features):** Validation-selected **Lasso ($L_1$, $\alpha=10.0$)** zeroed noisy collinear features cleanly to lower test RMSE to **₹103.61** ($R^2=0.7957$ vs Persistence **₹113.58**).
 - **Unified Model (`23` encoded columns):** Contains grouped one-hot dummies alongside collinear lags. You don't want $L_1$ dropping one commodity indicator arbitrarily; **$L_2$ (Ridge)** distributes shrinkage smoothly across groups (**MAE ₹65.97**).
-- **Onion Specialist:** Storage releases from Nashik/Pune *chals* create non-linear inflection curves that an **RBF-kernel SVR ($\epsilon=10, C=100$)** captured better than straight hyperplanes (**RMSE ₹179.06 vs Baseline ₹191.32**).
+- **Onion Specialist (`16` numerical features):** Validation-selected **Lasso ($L_1$, $\alpha=5.0$)** captured short-term price reversion cleanly (**RMSE ₹121.29 vs Baseline ₹138.95**, $R^2=0.6661$).
 
 ### Q4: Your spike classifiers only get 47–63% Accuracy and 0.52–0.57 ROC-AUC. Why aren't they 90% accurate?
 **Answer:** Be completely honest—this shows scientific maturity! Predicting an **exact single-day $\pm 10\%$ auction shock** strictly from historical prices and arrivals is fundamentally constrained by **unobserved exogenous shocks** (sudden overnight highway flooding, unexpected export bans, sudden buyer strikes at Gultekdi mandi). Even so:
@@ -618,12 +622,12 @@ ML_Project/
 3. **`StandardScaler`** inside scikit-learn `Pipeline`/`ColumnTransformer` computes $\mu_{\text{train}}, \sigma_{\text{train}}$ solely from Training folds before transforming Validation/Test sets.
 
 ### Q6: If `UnifiedCommodityPredictor` was trained only on Tomato, Onion, Moong Dal, and Sugar, what happens if someone enters "Potato" or "Rice" in the Streamlit app?
-**Answer:** Because `OneHotEncoder(handle_unknown='ignore')` is inside our `ColumnTransformer` (`scripts/train_unified_model.py`), unseen strings do **not** throw a `ValueError`. Instead, `infer_category_and_perishability()` assigns `"Cereals"` / `"Vegetables"` + perishability (`0` or `1`), and any unknown commodity dummy simply encodes as an all-zero vector while `Ridge` predicts seamlessly from the 16 standardized numerical price/supply/calendar features!
+**Answer:** Because empirical **Leave-One-Commodity-Out (LOCO)** benchmarks showed unseen-commodity `OneHotEncoder(handle_unknown='ignore')` forecasts fail persistence on 3 of 4 held-out crops (`Moong Dal`, `Onion`, `Sugar`), [`UnifiedCommodityPredictor`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/inference.py) checks requested commodities dynamically against `unified_model_metadata.json` (`['Moong Dal', 'Onion', 'Sugar', 'Tomato']`) and raises **`UnsupportedCommodityError`** unless explicit experimental override (`allow_experimental=True`) is enabled!
 
-### Q7: Why did you check `model_ready_pune_tomato.csv` (`873` rows) vs `1,039` rows and `3,755` vs `4,480` rows across scripts and notebooks? *(Bonus Deep Mastery Question!)*
+### Q7: How does [`src/features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/features.py) prevent time-series, submarket, and target-boundary leakage across the pipeline?
 **Answer:** Notice the difference in market granularity:
 - [`scripts/preprocess_and_prepare_data.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/preprocess_and_prepare_data.py) filters exact `market_name == "Pune"` (`873` rows: `611/130/132`) with `price_lag_1 = P(t)`.
-- [`scripts/build_features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/scripts/build_features.py) aggregates all Pune sub-markets (`Pune` + `Pimpri` + `Hadapsar` + `Khadiki`) via `.str.contains('Pune')` yielding **`1,039` Tomato rows (`156` test)**, keeps Pune (`1,007`) and Lasalgaon (`758`) Onion separate, and pools them with Moong Dal (`854`) and Sugar (`822`) into **`4,480` total unified rows** using strictly shifted `.shift(1)` lags. Notebook 03 demonstrates pooling both Onion hubs onto one date axis (`3,755` rows), while production uses the full `4,480`-row unified store (`unified_food_price_model.joblib`).
+- [`src/features.py`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/src/features.py) builds exact single-market series (`allow_submarket_aggregation=False`: Pune Tomato `870`, Pune Onion `859`, Lasalgaon Onion `628`, Mumbai Moong Dal `832`, Mumbai Sugar `819`) without silently pooling Pune submarkets, enforces distinct $P(t)$ vs $P(t-1)$ lags within each `(commodity_name, market_name)`, splits [`model_ready_unified_commodities_clean.csv`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/data/processed/model_ready_unified_commodities_clean.csv) (`3,998` rows) on shared global cutoffs, and purges `10` boundary rows whose `target_date_t_plus_1` crosses into Validation/Test!
 
 ### Q8: Why isn't the Household Affordability Calculator itself a trained Neural Network or Regression Model?
 **Answer:** Grocery budgeting is governed by exact arithmetic and **Engel's Law**, not noisy statistical estimation. A citizen or policy auditor must verify `20 kg × ₹38 + ... = ₹1,472`, divide by ₹25,000 income (`5.89%`), and compare deterministically against NSSO HCES 2022–23 thresholds (`39.17%` Urban / `46.38%` Rural / `56.60%` Bottom 20%). ML solves the *uncertain future* (commodity prices $P_{t+1}$); deterministic econometrics solves the *exact budget consequence*.
@@ -643,7 +647,8 @@ ML_Project/
 > 1. Launch Streamlit locally right before presenting: `py -3.12 -m streamlit run app.py`
 > 2. Keep Notebooks `01`–`05` open in IDE/Jupyter with all pre-rendered plots ready to scroll.
 > 3. Remember the 4 killer headline stats:
->    - **Corpus:** `189,413` government records (5 datasets); Unified store = `4,480` rows (`3,133 / 672 / 675` chronological split).
->    - **Unified Champion:** Ridge ($L_2$) **MAE ₹65.97/Qtl (~₹0.66/Kg)**, **RMSE ₹194.64/Qtl**, **$R^2 = 0.9935$**, **MAPE 6.65%** (Moong Dal **0.36%**, Sugar **1.10%**, Tomato **10.11%**, Onion **10.25%**).
->    - **Specialists vs Persistence Baseline:** Tomato Lasso **RMSE ₹93.35 vs ₹112.11** ($R^2=0.8454$); Onion SVR **RMSE ₹179.06 vs ₹191.32** ($R^2=0.3446$).
+>    - **Corpus:** `189,413` government records (5 datasets); leak-free Unified store = `3,998` boundary-purged rows (`2,800 / 595 / 603` shared chronological split).
+>    - **Unified Champion (Val-Selected):** Ridge ($L_2$, $\alpha=1.0$) **Pooled MAE ₹55.27/Qtl**, **Pooled RMSE ₹93.39/Qtl** (vs Baseline ₹97.99), Pooled $R^2 = 0.9986$, **Macro RMSE ₹77.03 vs ₹78.95**, **Macro $R^2 = 0.8603$**, **MAPE 6.69%**.
+>    - **Specialists vs Persistence Baseline (Val-Selected):** Tomato Lasso **RMSE ₹103.61 vs ₹113.58** ($R^2=0.7957$); Onion Lasso **RMSE ₹121.29 vs ₹138.95** ($R^2=0.6661$).
+>    - **Verification & Honesty:** Blocked unseen commodities unless experimental (`UnsupportedCommodityError`), wholesale `÷ 100` separated from unavailable retail ML, global Early-Warning Classifier honestly flagged (`PR-AUC=0.4293`), and **19/19 automated pytest checks passing**."*
 >    - **NSSO Engel Benchmarks:** Urban **39.17%**, Rural **46.38%**, Bottom 20% **56.60%** food budget share.

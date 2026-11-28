@@ -1,71 +1,76 @@
 """
-Pydantic Schemas for AI-Based Food Inflation Prediction and Household Affordability System
-Defines strong data validation contracts for REST API input and output payloads.
+Pydantic v2 Data Contracts for AI-Based Food Inflation & Affordability Monitoring.
+
+Version: v3.0.0-leakfree
+Synchronized with exact 16/20-feature schema (including current observed session
+`modal_price_rs_per_qtl`), strict positive validation, and honest trading-session horizons.
 """
 
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
+
 class CommodityPricePredictionRequest(BaseModel):
-    """Input payload for single-step commodity wholesale price prediction."""
-    commodity: str = Field(default="Tomato", description="Canonical commodity name")
-    market: str = Field(default="Pune APMC", description="Regulated market yard name")
-    price_lag_1: float = Field(..., gt=0, description="Observed modal price today at t (Rs/Quintal)")
-    price_lag_3: float = Field(..., gt=0, description="Observed modal price 3 trading sessions ago (Rs/Quintal)")
-    price_lag_7: float = Field(..., gt=0, description="Observed modal price 7 trading sessions ago (Rs/Quintal)")
-    rolling_mean_7: float = Field(..., gt=0, description="7-session moving average price (Rs/Quintal)")
-    rolling_std_7: float = Field(..., ge=0, description="7-session rolling standard deviation (Rs/Quintal)")
-    rolling_min_7: float = Field(..., gt=0, description="7-session minimum modal price (Rs/Quintal)")
-    rolling_max_7: float = Field(..., gt=0, description="7-session maximum modal price (Rs/Quintal)")
-    price_momentum_7: float = Field(..., description="7-session price velocity (P_t - P_{t-6})")
-    daily_spread: float = Field(..., ge=0, description="Intra-day auction spread (P_max - P_min)")
-    arrival_tonnes: float = Field(..., ge=0, description="Physical market arrival volume today in Metric Tonnes")
-    arrival_lag_1: float = Field(..., ge=0, description="Physical market arrival volume yesterday in Metric Tonnes")
-    rolling_arrival_mean_7: float = Field(..., ge=0, description="7-session moving average arrival in Metric Tonnes")
-    month: int = Field(..., ge=1, le=12, description="Calendar month (1 to 12)")
-    day_of_week: int = Field(..., ge=0, le=6, description="Day of week (0=Monday, 6=Sunday)")
-    is_monsoon_season: int = Field(..., ge=0, le=1, description="Binary monsoon indicator (1 for Jun-Aug, 0 otherwise)")
+    """Input schema for next-observed-trading-session wholesale price prediction."""
+
+    commodity_name: str = Field(..., description="Validated commodity name (e.g., Tomato, Onion, Moong Dal, Sugar)")
+    market_name: str = Field(..., description="APMC mandi market (e.g., Pune, Mumbai, Lasalgaon)")
+    category: Optional[str] = Field(None, description="Commodity group (Vegetables, Pulses, Sugars & Sweets)")
+    modal_price_rs_per_qtl: float = Field(..., gt=0, description="Current observed session wholesale modal price (Rs/Qtl)")
+    price_lag_1: float = Field(..., gt=0, description="Modal price 1 trading session prior (Rs/Qtl)")
+    price_lag_3: float = Field(..., gt=0, description="Modal price 3 trading sessions prior (Rs/Qtl)")
+    price_lag_7: float = Field(..., gt=0, description="Modal price 7 trading sessions prior (Rs/Qtl)")
+    rolling_mean_7: float = Field(..., gt=0, description="7-session historical rolling mean including current session")
+    rolling_std_7: float = Field(0.0, ge=0, description="7-session historical rolling std dev")
+    rolling_min_7: float = Field(..., gt=0, description="7-session historical rolling min")
+    rolling_max_7: float = Field(..., gt=0, description="7-session historical rolling max")
+    price_momentum_7: float = Field(0.0, description="7-session price momentum (%)")
+    daily_spread: float = Field(0.0, ge=0, description="Intraday max - min spread (Rs/Qtl)")
+    arrival_tonnes: float = Field(..., ge=0, description="Current session market arrival volume (tonnes)")
+    arrival_lag_1: float = Field(..., ge=0, description="Previous session arrival volume (tonnes)")
+    rolling_arrival_mean_7: float = Field(..., ge=0, description="7-session rolling mean arrival volume (tonnes)")
+    month: int = Field(..., ge=1, le=12, description="Calendar month (1-12)")
+    day_of_week: int = Field(..., ge=0, le=6, description="Day of week (0=Mon .. 6=Sun)")
+    is_monsoon_season: int = Field(0, ge=0, le=1, description="1 if June-September monsoon months, else 0")
+    is_perishable: int = Field(1, ge=0, le=1, description="1 if perishable vegetable crop, else 0")
+
 
 class CommodityPricePredictionResponse(BaseModel):
-    """Output payload from production prediction model."""
-    status: str = Field(default="success")
+    """Output schema for wholesale forecast, mathematical kg equiv, and early-warning classifier."""
+
     commodity: str
     market: str
-    observed_price_rs_per_qtl: float
-    predicted_next_price_rs_per_qtl: float
-    observed_price_rs_per_kg: float
-    predicted_next_price_rs_per_kg: float
-    predicted_change_rs_per_qtl: float
-    predicted_change_percentage: float
-    prediction_horizon: str
-    model_version: str
-    timestamp: str
+    current_modal_price_rs_per_qtl: float
+    predicted_next_session_rs_per_qtl: float
+    wholesale_equiv_rs_per_kg: float
+    predicted_change_rs_qtl: float
+    predicted_change_pct: float
+    prediction_horizon: str = Field(
+        default="Next observed active APMC trading session (t+1; not guaranteed next calendar day)"
+    )
+    model_used: str
+    is_validated_commodity: bool
+    is_validated_pair: bool
+    inflation_alert_level: str
+    inflation_alert_badge: str
+    retail_estimation_status: str
+    early_warning_classifier: Optional[Dict[str, object]] = None
 
-class FoodBasketItem(BaseModel):
-    """Individual commodity in a household monthly food basket."""
-    commodity_name: str = Field(..., description="Commodity name (e.g. Rice, Wheat, Tomato, Onion, Oil)")
-    monthly_quantity_kg: float = Field(..., gt=0, description="Monthly household consumption in kilograms or litres")
-    current_retail_price_per_kg: float = Field(..., gt=0, description="Current consumer retail price in Rs/Kg or Rs/Litre")
-    predicted_retail_price_per_kg: Optional[float] = Field(None, gt=0, description="Predicted future retail price in Rs/Kg")
+
+class HouseholdBasketItem(BaseModel):
+    """Single household food basket entry priced per Kg (retail observed or manual)."""
+
+    commodity_name: str = Field(..., min_length=1)
+    monthly_quantity_kg: float = Field(..., ge=0)
+    current_retail_price_per_kg: float = Field(..., ge=0)
+    predicted_retail_price_per_kg: Optional[float] = Field(None, ge=0)
+
 
 class HouseholdAffordabilityRequest(BaseModel):
-    """Request payload for deterministic household affordability calculation."""
-    household_id: Optional[str] = "HH-DEFAULT"
-    household_members: int = Field(default=4, ge=1, le=20, description="Number of household members")
-    monthly_household_income: float = Field(..., gt=0, description="Total monthly household income in Indian Rupees")
-    sector: str = Field(default="Urban", description="Demographic sector: Urban or Rural")
-    geography: str = Field(default="Maharashtra", description="State or region")
-    basket_items: List[FoodBasketItem] = Field(..., description="List of food commodities consumed monthly")
+    """Input schema for household food affordability & budget share assessment."""
 
-class HouseholdAffordabilityResponse(BaseModel):
-    """Response payload detailing food basket cost, budget share, and vulnerability index."""
-    household_id: str
-    monthly_income: float
-    total_food_basket_cost_current: float
-    total_food_basket_cost_predicted: Optional[float] = None
-    current_food_budget_share_pct: float
-    predicted_food_budget_share_pct: Optional[float] = None
-    affordability_status: str
-    nsso_benchmark_reference: str
-    inflation_impact_monthly_diff_rs: Optional[float] = None
-    vulnerability_alert: str
+    household_id: str = "HH-DEFAULT"
+    monthly_income_rs: float = Field(..., gt=0, description="Strictly positive monthly household income (Rs)")
+    family_size: int = Field(4, ge=1)
+    sector: str = Field("Urban", description="Urban or Rural")
+    basket_items: List[HouseholdBasketItem] = Field(..., min_length=1)
