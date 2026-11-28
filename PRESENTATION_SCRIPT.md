@@ -340,7 +340,7 @@ Ridge Regression (L2, alpha=1.0, Intercept = ₹2,830.72)
 
 | Rank | Algorithm (`train_unified_model.py`) | MAE (₹/Qtl) | RMSE (₹/Qtl) | $R^2$ Score | MAPE (%) | Assessment |
 |:---:|---|---:|---:|---:|---:|---|
-| 1 | **Ridge Regression (L2, $\alpha=1.0$)** | **55.27** | **93.39** | **0.9986** | 6.69% | **CHAMPION (Validation-Selected)** (Beats Persistence RMSE 97.99; Macro RMSE 77.03, Macro R² 0.8603) |
+| 1 | **Multiple Linear Regression** | **55.31** | **93.68** | **0.9986** | 6.68% | **CHAMPION (Selected by `Val_Macro_RMSE`)** (Macro RMSE 77.34 vs Base 79.10; Macro R² 0.8586) |
 | 2 | **Multiple Linear Regression** | 66.38 | 194.70 | 0.9934 | **6.61%** | Virtually identical to Ridge; slightly higher RMSE variance |
 | 3 | **Lasso Regression (L1, $\alpha=0.5$)** | 66.37 | 194.71 | 0.9934 | 6.62% | Sparse feature selection matches OLS |
 | 4 | **ElasticNet ($\alpha=0.1, l_1=0.5$)** | 79.93 | 198.47 | 0.9932 | 8.06% | Over-shrunk due to higher $\alpha$ |
@@ -358,19 +358,19 @@ Ridge Regression (L2, alpha=1.0, Intercept = ₹2,830.72)
 | **Sugar** | Sugars & Sweets | 121 | 3,205.61 | 27.18 | ₹0.27 | 35.59 | **0.8170** | **0.85%** |
 | **Tomato** | Vegetables | 131 | 706.87 | 78.11 | ₹0.78 | 104.93 | **0.7905** | 12.25% |
 | **Onion** | Vegetables | 228 | 867.50 | 75.72 | ₹0.76 | 122.33 | **0.8490** | 10.04% |
-| **POOLED / MACRO** | **All Groups** | **603** | — | **55.27 / 50.42** | **₹0.55 / ₹0.50** | **93.39 / 77.03** | **0.9986 / 0.8603** | **6.69% / 5.86%** |
+| **POOLED / MACRO** | **All Groups** | **605** | — | **55.31 / 50.52** | **₹0.55 / ₹0.51** | **93.68 / 77.34** | **0.9986 / 0.8586** | **6.68% / 5.85%** |
 
 *Note: Moong Dal Test breakdown (123 rows): RMSE ₹45.25 vs Persistence ₹42.29; Onion (228 rows): RMSE ₹122.33 vs ₹128.41 (+6.08 improvement); Sugar (121 rows): ₹35.59 vs ₹31.52; Tomato (131 rows): ₹104.93 vs ₹113.58 (+8.65 improvement).*
 
 ### 9.3 Dedicated Crop Specialist Benchmarks (`model_metadata_tomato.json` & `onion`)
 
 - **Tomato Specialist (`131` untouched test rows from `870`-row exact-Pune series):**
-  - **Champion (Validation-Selected): Lasso Regression ($L_1$, $\alpha=10.0$)** — MAE **₹75.95**, RMSE **₹103.61**, $R^2 = \mathbf{0.7957}$, MAPE **11.99%** (beats Persistence ₹113.58 by +₹9.97/Qtl).
+  - **Champion (Validation-Selected): Lasso Regression ($L_1$, $\alpha=10.0$)** — MAE **₹75.89**, RMSE **₹103.68**, $R^2 = \mathbf{0.7954}$, MAPE **11.96%** (beats Persistence ₹113.58 by +₹9.90/Qtl).
   - **Beats Naive Persistence Baseline** ($y_{t+1} = y_t$): MAE ₹83.17, RMSE ₹112.11, $R^2 = 0.7771$, MAPE 11.25% (a **₹18.76/Qtl RMSE reduction!**).
   - *(Note: On the `873`-row exact-Pune subset tested in Notebook 05 Cell 6 (`132` test rows), Lasso still beats that subset's Naive Baseline: RMSE **₹111.45 vs ₹114.48**, $R^2$ **0.7647 vs 0.7518**.)*
   - Poor performers on Tomato test: KNN ($k=7$) RMSE ₹221.38 ($R^2=0.1307$), SVR RMSE ₹184.16, AdaBoost RMSE ₹161.72, Decision Tree RMSE ₹158.83.
 - **Onion Specialist (`130` untouched test rows from `859`-row exact-Pune series):**
-  - **Champion (Validation-Selected): Lasso Regression ($L_1$, $\alpha=5.0$)** — MAE **₹76.88**, RMSE **₹121.29**, $R^2 = \mathbf{0.6661}$, MAPE **8.96%** (beats Persistence ₹138.95 by +₹17.66/Qtl).
+  - **Champion (Validation-Selected): Lasso Regression ($L_1$, $\alpha=5.0$)** — MAE **₹76.57**, RMSE **₹121.22**, $R^2 = \mathbf{0.6665}$, MAPE **8.91%** (beats Persistence ₹138.95 by +₹17.73/Qtl).
   - **Beats Naive Persistence Baseline:** MAE ₹97.70, RMSE ₹191.32, $R^2 = 0.2518$, MAPE 9.45%.
   - Lasso (RMSE ₹182.91), Ridge (RMSE ₹183.21), MLR (RMSE ₹183.58), and Stacking (RMSE ₹184.83) followed closely, while Decision Tree overfit badly ($R^2 = -2.3169$).
 
@@ -385,7 +385,7 @@ Ridge Regression (L2, alpha=1.0, Intercept = ₹2,830.72)
    - **Tomato (`classification_comparison_tomato.csv`, 131 test sessions):**
      - **Bagging Classifier (`Val_Threshold=0.35`):** Selected on Validation — Test `Acc=0.4580`, `F1=0.6162`, `ROC-AUC=0.5704`, `PR-AUC=0.5162` (beats Majority Baseline `Acc=0.4427`, `F1=0.6138`).
    - **Global 3-Class Early-Warning Classifier (`spike_classifier.joblib`, 603 test sessions):**
-     - **Logistic Regression (Balanced, C=10.0):** `Test Acc=0.6003` (vs Majority Baseline `0.7811`), `Macro-F1=0.4946`, `Any-Spike ROC-AUC=0.8117`, `PR-AUC=0.4293` (Surge Recall `82.35%`, flagged honestly as low-precision experimental).
+     - **Logistic Regression (Balanced, C=1.0):** `Test Acc=0.5884` (vs Majority Baseline `0.7802`), `Macro-F1=0.4825`, `Any-Spike ROC-AUC=0.8200`, `PR-AUC=0.4671` (Surge Recall `83.82%`, flagged honestly as low-precision experimental).
      - **AdaBoost Classifier:** Highest **Accuracy = 52.56%** (Prec 38.36%, Recall 49.12%, AUC 0.5178).
      - **Logistic Regression:** Highest **ROC-AUC = 0.5249** (Acc 47.44%, Recall 66.67%, F1 0.4810).
    - **Onion (`classification_comparison.csv`, 152 test sessions):**
@@ -541,7 +541,7 @@ Instead of solving OLS via matrix inversion $(X^TX)^{-1}X^Ty$, iterative optimiz
 | [`02_exploratory_data_analysis.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/02_exploratory_data_analysis.ipynb) | **B & C** | Computes **7+ descriptive stats** across Tomato, Onion, Moong Dal, Sugar; renders **5 visualizations** (timeseries, KDE histograms, Tukey boxplots, crop-calendar seasonality, correlation heatmap). |
 | [`03_data_preprocessing.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/03_data_preprocessing.ipynb) | **D & E** | Verifies anomalies/duplicates removed (`168` dupes), builds zero-leakage `engineer_commodity_features()`, verifies chronological 70/15/15 split timelines graphically across all 4 commodities. |
 | [`04_regression_model_development.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/04_regression_model_development.ipynb) | **F** | Trains Baseline + **13 regressors** on validation set, extracts `SLR` equation, benchmarks **Batch/SGD/Mini-batch GD** loss curves over 200 epochs, and trains the **Unified Cross-Commodity Pipeline**. |
-| [`05_model_evaluation.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/05_model_evaluation.ipynb) | **G & H** | Evaluates **Unified Ridge** on 603 untouched test rows (Pooled `R²=0.9986`, **Macro `R²=0.8603`**, RMSE `₹93.39` vs Persistence `₹97.99`), breaks down all 4 commodities, verifies Tomato & Onion Lasso specialists beat Persistence, checks Global Early-Warning PR-AUC (`0.4293`), and simulates Household Affordability under HCES benchmarks. |
+| [`05_model_evaluation.ipynb`](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/notebooks/05_model_evaluation.ipynb) | **G & H** | Evaluates **Unified Model (`Multiple Linear Regression` selected by `Val_Macro_RMSE`)** on 605 untouched test rows (`Macro_RMSE ₹77.34 vs ₹79.10`, **Macro `R²=0.8586`**, Pooled `RMSE=93.68`), verifies Tomato & Onion Lasso specialists beat Persistence, checks Global Early-Warning PR-AUC (`0.4671`), and simulates Household Affordability under HCES benchmarks. |
 
 ### Repository Tree (`scripts/`, `src/`, `models/`, `tests/`)
 
@@ -648,7 +648,7 @@ ML_Project/
 > 2. Keep Notebooks `01`–`05` open in IDE/Jupyter with all pre-rendered plots ready to scroll.
 > 3. Remember the 4 killer headline stats:
 >    - **Corpus:** `189,413` government records (5 datasets); leak-free Unified store = `3,998` boundary-purged rows (`2,800 / 595 / 603` shared chronological split).
->    - **Unified Champion (Val-Selected):** Ridge ($L_2$, $\alpha=1.0$) **Pooled MAE ₹55.27/Qtl**, **Pooled RMSE ₹93.39/Qtl** (vs Baseline ₹97.99), Pooled $R^2 = 0.9986$, **Macro RMSE ₹77.03 vs ₹78.95**, **Macro $R^2 = 0.8603$**, **MAPE 6.69%**.
->    - **Specialists vs Persistence Baseline (Val-Selected):** Tomato Lasso **RMSE ₹103.61 vs ₹113.58** ($R^2=0.7957$); Onion Lasso **RMSE ₹121.29 vs ₹138.95** ($R^2=0.6661$).
->    - **Verification & Honesty:** Blocked unseen commodities unless experimental (`UnsupportedCommodityError`), wholesale `÷ 100` separated from unavailable retail ML, global Early-Warning Classifier honestly flagged (`PR-AUC=0.4293`), and **19/19 automated pytest checks passing**."*
+>    - **Unified Champion (`Val_Macro_RMSE` Selected):** `Multiple Linear Regression` **Macro RMSE ₹77.34 vs ₹79.10**, **Macro $R^2 = 0.8586$**, Pooled **MAE ₹55.31/Qtl**, Pooled **RMSE ₹93.68/Qtl** (vs Baseline ₹98.16), Pooled $R^2 = 0.9986$, **MAPE 6.68%**.
+>    - **Specialists vs Persistence Baseline (`DatePurgedWalkForwardCV`):** Tomato Lasso **RMSE ₹103.68 vs ₹113.58** ($R^2=0.7954$); Onion Lasso **RMSE ₹121.22 vs ₹138.95** ($R^2=0.6665$).
+>    - **Verification & Honesty:** Blocked unseen commodities & pairs in Mode A, separated Mode B experimental manual exploration, removed Rs.45 fallbacks, matched markets strictly without submarkets, flagged Early-Warning Classifier honestly (`PR-AUC=0.4671`), and **27/27 automated pytest parity checks passing**."*
 >    - **NSSO Engel Benchmarks:** Urban **39.17%**, Rural **46.38%**, Bottom 20% **56.60%** food budget share.

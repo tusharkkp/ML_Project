@@ -1,15 +1,16 @@
 """
 Streamlit Dashboard — AI-Based Food Inflation Prediction & Household Affordability Monitoring.
 
-Version: v3.0.0-leakfree
-Synchronized with chronological validation-selected models, dynamic commodity/market guards,
-live API fetching with explicit fallback, early-warning classification, and market comparison.
+Version: v3.1.0-parity (Phases 2, 4, 5, 6, 10)
+Synchronized with exact Mode A (Validated Forecasting) vs Mode B (Experimental Manual
+Exploration) separation, canonical feature parity, zero fabricated retail defaults,
+and transparent validation-selected benchmarks.
 """
 
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -24,6 +25,7 @@ from src.inference import (
     CommodityPricePredictor,
     UnifiedCommodityPredictor,
     UnsupportedCommodityError,
+    UnsupportedMarketPairError,
 )
 from src.live_data import (
     fetch_latest_market_data,
@@ -71,15 +73,34 @@ def load_specialist_predictor(commodity: str) -> CommodityPricePredictor:
     return CommodityPricePredictor(models_dir=MODELS_DIR, commodity=commodity)
 
 
-def _render_prediction_result(res: Dict[str, Any], actual_next: float | None = None, obs_date: str | None = None):
-    """Render wholesale prediction, kg unit equiv, retail note, and early-warning classifier."""
-    st.markdown(f"**Prediction Horizon:** `{res['prediction_horizon']}`")
-    if obs_date:
-        st.caption(f"Observation Date Used: **{obs_date}** | Feature Mode: `{res['feature_mode']}` | Model: `{res['model_used']}`")
+def _render_prediction_result(
+    res: Dict[str, Any],
+    actual_next: Optional[float] = None,
+    obs_date: Optional[str] = None,
+    arrivals_info: Optional[Dict[str, Any]] = None,
+):
+    """Render Mode A vs Mode B forecast banner, price metrics, DCA retail status & early warning."""
+    if res.get("is_validated_forecast"):
+        st.success(f"**Inference Mode:** `{res['inference_mode']}` | Schema `{res.get('feature_schema_version')}`")
     else:
-        st.caption(f"Feature Mode: `{res['feature_mode']}` | Model: `{res['model_used']}`")
+        st.error(
+            f"**{res['inference_mode']} (NOT a Validated Production Forecast)**\n\n"
+            f"{res.get('experimental_disclaimer', '')}"
+        )
+        if res.get("approximations_used"):
+            st.caption("Approximations applied: " + "; ".join(res["approximations_used"]))
 
-    if res.get("validation_warning"):
+    st.markdown(f"**Prediction Horizon:** `{res['prediction_horizon']}`")
+    meta_line = f"Model: `{res['model_used']}`"
+    if obs_date:
+        meta_line = f"Price Observation Date: **{obs_date}** | " + meta_line
+    if arrivals_info:
+        arr_avail = arrivals_info.get("arrivals_available")
+        arr_dt = arrivals_info.get("arrival_observation_date")
+        meta_line += f" | Arrivals Available: `{arr_avail}`" + (f" ({arr_dt})" if arr_dt else "")
+    st.caption(meta_line)
+
+    if res.get("validation_warning") and res.get("is_validated_forecast"):
         st.warning(res["validation_warning"])
 
     c1, c2, c3, c4 = st.columns(4)
@@ -97,19 +118,20 @@ def _render_prediction_result(res: Dict[str, Any], actual_next: float | None = N
     c3.metric(
         "Wholesale Equiv (÷ 100 Unit Conv.)",
         f"Rs. {res['wholesale_equiv_rs_per_kg']:.2f}/Kg",
-        "NOT a retail estimate",
+        "Unit conversion only — NOT retail",
         delta_color="off",
     )
     obs_ret = res.get("observed_retail_reference", {}) or {}
-    if obs_ret.get("retail_price_rs_per_kg"):
+    if obs_ret.get("retail_price_rs_per_kg") is not None:
+        stale_note = "Archived " if obs_ret.get("is_stale_archive") else "Live "
         c4.metric(
             "Observed DCA Retail Reference",
             f"Rs. {obs_ret['retail_price_rs_per_kg']:.2f}/Kg",
-            f"{obs_ret.get('centre', 'DCA')} ({obs_ret.get('observation_date', 'N/A')})",
+            f"{stale_note}{obs_ret.get('centre', 'DCA')} ({obs_ret.get('observation_date', 'N/A')})",
             delta_color="off",
         )
     else:
-        c4.metric("Observed DCA Retail", "Unavailable", "No archive row", delta_color="off")
+        c4.metric("Observed DCA Retail", "Unavailable", "No official DCA observation", delta_color="off")
 
     if actual_next is not None:
         err = res["predicted_next_session_rs_per_qtl"] - actual_next
@@ -118,7 +140,6 @@ def _render_prediction_result(res: Dict[str, Any], actual_next: float | None = N
             f"**Prediction Error (Pred - Actual):** {err:+.2f} Rs/Qtl"
         )
 
-    # Alert & Early-Warning ML Classifier
     st.markdown(f"**Directional Band Alert:** `{res['inflation_alert_badge']}`")
     ew = res.get("early_warning_classifier")
     if ew and ew.get("available"):
@@ -136,17 +157,24 @@ def _render_prediction_result(res: Dict[str, Any], actual_next: float | None = N
             ec3.metric("Surge (> +10%)", f"{probs.get('Surge', 0.0) * 100:.1f}%")
             ec4.metric("Crash (< -10%)", f"{probs.get('Crash', 0.0) * 100:.1f}%")
             st.caption(f"Algorithm: {ew.get('champion_algorithm')} | Any-Spike Probability: {(ew.get('any_spike_probability') or 0)*100:.1f}%")
+    elif ew:
+        st.caption(f"Early-Warning Classifier: {ew.get('reliability_status')}")
 
-    with st.expander("Wholesale-to-Retail Estimation Audit Note", expanded=False):
+    with st.expander("Wholesale-to-Retail Estimation Audit & Data Provenance", expanded=False):
         st.write(f"**Retail ML Status:** `{res.get('retail_estimation_status')}`")
         st.write(res.get("retail_estimation_note", ""))
+        if obs_ret.get("retail_price_rs_per_kg") is not None:
+            st.caption(
+                f"Observed DCA Source: `{obs_ret.get('source')}` | "
+                f"Centre: `{obs_ret.get('centre')}` | Date: `{obs_ret.get('observation_date')}`"
+            )
 
 
 def page_forecasting():
     st.title("Commodity Price Forecasting & Early-Warning Monitor")
     st.caption(
-        "Forecasts next observed active APMC trading session modal prices (Rs/Quintal) using "
-        "strictly chronological, validation-selected pipelines."
+        "Separates Mode A Validated Forecasting (complete historical/continuous APMC features) from "
+        "Mode B Experimental Manual Exploration under unified schema v3.1.0-parity."
     )
 
     try:
@@ -165,151 +193,163 @@ def page_forecasting():
             selected_choice = st.selectbox("Commodity", choice_list)
             if selected_choice == "Other / Unvalidated Commodity (Test Guard)":
                 commodity_input = st.text_input("Enter Commodity Name", value="Potato")
-                allow_exp = st.checkbox(
-                    "Force Experimental Inference on Unvalidated Commodity",
+                allow_exp_comm = st.checkbox(
+                    "Force Mode B Experimental Exploration on Unvalidated Commodity",
                     value=False,
-                    help="Leave unchecked to enforce validated commodity protection.",
+                    help="Unchecked enforces UnsupportedCommodityError protection.",
                 )
             else:
                 commodity_input = selected_choice
-                allow_exp = False
+                allow_exp_comm = False
         with col_b:
-            avail_markets = unified.get_supported_markets(commodity_input) if selected_choice in supported_comms else unified.get_supported_markets()
-            market_input = st.selectbox("APMC Mandi Market", avail_markets)
+            avail_markets = (
+                unified.get_supported_markets(commodity_input)
+                if selected_choice in supported_comms
+                else unified.get_supported_markets()
+            )
+            market_input = st.selectbox("Exact Canonical APMC Market", avail_markets)
         with col_c:
             source_mode = st.radio(
-                "Feature Input Mode",
+                "Inference Mode",
                 [
-                    "Historical Archive Replay (Validated)",
-                    "Live API Fetch (data.gov.in)",
-                    "Manual Feature Exploration",
+                    "Mode A: Validated Historical Archive Replay",
+                    "Mode A: Live Official API Fetch (data.gov.in)",
+                    "Mode B: Experimental Manual Exploration",
                 ],
             )
 
         st.divider()
 
-        if source_mode == "Historical Archive Replay (Validated)":
+        if source_mode == "Mode A: Validated Historical Archive Replay":
             if selected_choice not in supported_comms:
-                st.warning(f"No validated historical archive series exists for '{commodity_input}'.")
+                st.warning(f"Mode A unavailable: '{commodity_input}' has no validated archive series.")
             else:
-                if st.button("Run Historical Replay Forecast", type="primary", key="btn_uni_hist"):
+                if st.button("Run Mode A Validated Archive Forecast", type="primary", key="btn_uni_hist"):
                     try:
                         hist = get_historical_latest_features(commodity_input, market_input)
-                        res = unified.predict_from_features(
-                            hist["features"],
-                            allow_experimental=False,
-                            feature_mode="historical_archive_replay",
-                        )
+                        res = unified.predict_validated(hist["features"])
                         _render_prediction_result(
                             res,
                             actual_next=hist.get("actual_next_price_rs_per_qtl"),
                             obs_date=hist.get("observation_date"),
+                            arrivals_info=hist,
                         )
                         st.session_state["last_forecast"] = res
-                    except UnsupportedCommodityError as exc:
-                        st.error(f"Validation Block: {exc}")
+                    except (UnsupportedCommodityError, UnsupportedMarketPairError) as exc:
+                        st.error(f"Mode A Validation Block: {exc}")
                     except Exception as exc:
                         st.error(f"Historical replay error: {exc}")
 
-        elif source_mode == "Live API Fetch (data.gov.in)":
+        elif source_mode == "Mode A: Live Official API Fetch (data.gov.in)":
             force_ref = st.checkbox("Bypass 15-min local API cache (force fresh request)", value=False)
-            if st.button("Fetch Latest Official Market Record", type="primary", key="btn_uni_live"):
-                with st.spinner("Querying data.gov.in AGMARKNET endpoint (timeout 10s)..."):
+            if st.button("Fetch Latest Exact-Market API Record", type="primary", key="btn_uni_live"):
+                with st.spinner("Querying data.gov.in AGMARKNET endpoint (exact alias filter, timeout 10s)..."):
                     live_res = fetch_latest_market_data(
                         commodity_input, market_input, force_refresh=force_ref, timeout_seconds=10
                     )
                 st.markdown(f"**Fetch Freshness:** `{live_res.get('freshness_label')}` | **Status:** `{live_res.get('status')}`")
-                if live_res.get("observed_price_rs_per_qtl"):
-                    m1, m2, m3 = st.columns(3)
-                    m1.metric("Observed API Modal Price", f"Rs. {live_res['observed_price_rs_per_qtl']:,.2f}/Qtl")
-                    m2.metric("API Date", str(live_res.get("observation_date")))
-                    m3.metric("Continuous 7d Lags Available", str(live_res.get("lag_features_ready")))
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric(
+                    "Observed API Modal Price",
+                    f"Rs. {live_res['observed_price_rs_per_qtl']:,.2f}/Qtl" if live_res.get("observed_price_rs_per_qtl") else "Unavailable",
+                )
+                m2.metric("Price Date", str(live_res.get("observation_date") or "N/A"))
+                m3.metric(
+                    "Arrivals Telemetry",
+                    f"{live_res['arrival_quantity_tonnes']} Tonnes" if live_res.get("arrivals_available") else "Unavailable (Not Zero)",
+                )
+                m4.metric("Mode A Complete Inputs", str(live_res.get("lag_features_ready")))
+
+                if live_res.get("rejected_submarkets"):
+                    st.caption(f"Submarkets excluded by exact matching: `{live_res['rejected_submarkets']}`")
+
                 if live_res.get("lag_features_ready") and live_res.get("features"):
                     try:
-                        res = unified.predict_from_features(
-                            live_res["features"],
-                            allow_experimental=allow_exp,
-                            feature_mode="live_api_continuous",
-                        )
-                        _render_prediction_result(res, obs_date=live_res.get("observation_date"))
+                        res = unified.predict_validated(live_res["features"])
+                        _render_prediction_result(res, obs_date=live_res.get("observation_date"), arrivals_info=live_res)
                         st.session_state["last_forecast"] = res
-                    except UnsupportedCommodityError as exc:
-                        st.error(f"Validation Block: {exc}")
+                    except (UnsupportedCommodityError, UnsupportedMarketPairError) as exc:
+                        st.error(f"Mode A Validation Block: {exc}")
                 else:
                     st.warning(
-                        f"**Model Inference Withheld (Zero-Fabrication Rule):** {live_res.get('message')} "
-                        "Use **Historical Archive Replay** for verified end-to-end replay or **Manual Feature Exploration** if you supply real recent prices."
+                        f"**Automated Mode A Forecast Withheld (Zero-Fabrication Parity Rule):** {live_res.get('message')}\n\n"
+                        "Switch to **Mode A: Historical Archive Replay** for verified end-to-end series or use "
+                        "**Mode B: Experimental Manual Exploration** if you explicitly supply manual values."
                     )
 
-        else:  # Manual Feature Exploration
-            if selected_choice not in supported_comms and not allow_exp:
-                st.info("Checking unsupported commodity validation guard...")
+        else:  # Mode B: Experimental Manual Exploration
+            st.warning(
+                "**Mode B: Experimental Manual Exploration.** Manual exploration computes approximate previous-window "
+                "summaries from your entered past lags (strictly excluding current session P(t)) and is NOT equivalent "
+                "to Mode A Validated Forecasting."
+            )
             m1, m2, m3, m4 = st.columns(4)
-            p_curr = m1.number_input("Current Modal Price (Rs/Qtl)", min_value=50.0, value=1400.0, step=50.0)
-            p_lag1 = m2.number_input("Lag 1 Session (Rs/Qtl)", min_value=50.0, value=1350.0, step=50.0)
-            p_lag3 = m3.number_input("Lag 3 Sessions (Rs/Qtl)", min_value=50.0, value=1280.0, step=50.0)
-            p_lag7 = m4.number_input("Lag 7 Sessions (Rs/Qtl)", min_value=50.0, value=1200.0, step=50.0)
+            p_curr = m1.number_input("Current Modal Price P(t) (Rs/Qtl)", min_value=50.0, value=1400.0, step=50.0)
+            p_lag1 = m2.number_input("Previous Session P(t-1) (Rs/Qtl)", min_value=50.0, value=1350.0, step=50.0)
+            p_lag3 = m3.number_input("Lag 3 Sessions P(t-3) (Rs/Qtl)", min_value=50.0, value=1280.0, step=50.0)
+            p_lag7 = m4.number_input("Lag 7 Sessions P(t-7) (Rs/Qtl)", min_value=50.0, value=1200.0, step=50.0)
 
-            n1, n2, n3, n4 = st.columns(4)
-            arr_t = n1.number_input("Arrivals Today (Tonnes)", min_value=0.0, value=120.0, step=10.0)
-            spread = n2.number_input("Intraday Spread (Rs/Qtl)", min_value=0.0, value=200.0, step=25.0)
-            month_val = n3.slider("Month", 1, 12, 11)
-            dow_val = n4.slider("Day of Week (0=Mon..6=Sun)", 0, 6, 2)
+            a1, a2, a3, a4 = st.columns(4)
+            arr_t = a1.number_input("Current Arrivals (Tonnes)", min_value=0.0, value=120.0, step=10.0)
+            arr_lag1 = a2.number_input("Previous Arrivals (t-1 Tonnes)", min_value=0.0, value=115.0, step=10.0)
+            arr_mean7 = a3.number_input("7-Session Prior Arrival Mean (Tonnes)", min_value=0.0, value=125.0, step=10.0)
+            spread = a4.number_input("Intraday Spread (Rs/Qtl)", min_value=0.0, value=200.0, step=25.0)
 
-            if st.button("Run Manual Forecast", type="primary", key="btn_uni_man"):
+            s1, s2 = st.columns(2)
+            month_val = s1.slider("Month", 1, 12, 11)
+            dow_val = s2.slider("Day of Week (0=Mon..6=Sun)", 0, 6, 2)
+
+            if st.button("Run Mode B Experimental Forecast", type="secondary", key="btn_uni_man"):
                 try:
-                    res = unified.predict(
+                    res = unified.predict_experimental_manual(
                         commodity=commodity_input,
                         market=market_input,
                         modal_price=p_curr,
                         price_lag_1=p_lag1,
                         price_lag_3=p_lag3,
                         price_lag_7=p_lag7,
-                        rolling_mean_7=(p_curr + p_lag1 + p_lag3 + p_lag7) / 4.0,
-                        rolling_std_7=float(pd.Series([p_curr, p_lag1, p_lag3, p_lag7]).std()),
-                        rolling_min_7=min(p_curr, p_lag1, p_lag3, p_lag7),
-                        rolling_max_7=max(p_curr, p_lag1, p_lag3, p_lag7),
                         arrival_tonnes=arr_t,
-                        arrival_lag_1=arr_t,
-                        rolling_arrival_mean_7=arr_t,
+                        arrival_lag_1=arr_lag1,
+                        rolling_arrival_mean_7=arr_mean7,
                         daily_spread=spread,
                         month=month_val,
                         day_of_week=dow_val,
-                        allow_experimental=allow_exp,
-                        allow_manual_approx=False,
+                        allow_experimental_commodity=allow_exp_comm,
                     )
                     _render_prediction_result(res)
                     st.session_state["last_forecast"] = res
                 except UnsupportedCommodityError as exc:
                     st.error(f"Unsupported Commodity Blocked: {exc}")
                 except Exception as exc:
-                    st.error(f"Inference error: {exc}")
+                    st.error(f"Experimental exploration error: {exc}")
 
         if "last_forecast" in st.session_state:
             lf = st.session_state["last_forecast"]
-            if st.button("Send Forecast Delta to Household Affordability Stress Scenario"):
-                st.session_state["affordability_context"] = {
-                    "commodity": lf["commodity"],
-                    "market": lf["market"],
-                    "wholesale_change_pct": lf["predicted_change_pct"],
-                    "predicted_wholesale_qtl": lf["predicted_next_session_rs_per_qtl"],
-                }
-                st.success(
-                    f"Saved {lf['commodity']} ({lf['predicted_change_pct']:+.2f}% next-session wholesale change) "
-                    "for Scenario Simulation in Page 3: Household Affordability."
-                )
+            if lf.get("is_validated_forecast"):
+                if st.button("Send Validated Forecast Delta to Household Affordability Hypothetical Scenario"):
+                    st.session_state["affordability_context"] = {
+                        "commodity": lf["commodity"],
+                        "market": lf["market"],
+                        "wholesale_change_pct": lf["predicted_change_pct"],
+                        "predicted_wholesale_qtl": lf["predicted_next_session_rs_per_qtl"],
+                    }
+                    st.success(
+                        f"Saved {lf['commodity']} ({lf['predicted_change_pct']:+.2f}% next-session wholesale change) "
+                        "for Hypothetical Scenario Testing in Page 3."
+                    )
 
     with tab_spec:
         spec_comm = st.selectbox("Select Specialist Commodity", ["Tomato", "Onion"])
-        if st.button("Replay Specialist Latest Validated Test Observation", type="primary", key="btn_spec_replay"):
+        if st.button("Run Mode A Specialist Archive Replay", type="primary", key="btn_spec_replay"):
             try:
                 spec_pred = load_specialist_predictor(spec_comm)
                 hist = get_historical_latest_features(spec_comm, "Pune")
-                res = spec_pred.predict_from_features(hist["features"], feature_mode="specialist_historical_replay")
+                res = spec_pred.predict_validated(hist["features"])
                 _render_prediction_result(
                     res,
                     actual_next=hist.get("actual_next_price_rs_per_qtl"),
                     obs_date=hist.get("observation_date"),
+                    arrivals_info=hist,
                 )
             except Exception as exc:
                 st.error(f"Specialist forecast error: {exc}")
@@ -318,8 +358,8 @@ def page_forecasting():
 def page_market_comparison():
     st.title("Market Comparison & Historical Analysis")
     st.caption(
-        "Compare observed APMC wholesale prices (Rs/Quintal) and arrivals across exact "
-        "markets without mixing commodities or inventing interpolated observations."
+        "Compares observed APMC wholesale prices (Rs/Quintal) and arrivals across exact single markets "
+        "without merging submarkets or interpolating missing days."
     )
 
     avail_comms = get_available_commodities(min_markets=2, min_rows_per_market=30)
@@ -329,7 +369,11 @@ def page_market_comparison():
 
     c1, c2 = st.columns([2, 3])
     with c1:
-        commodity = st.selectbox("Select Commodity", avail_comms, index=avail_comms.index("Onion") if "Onion" in avail_comms else 0)
+        commodity = st.selectbox(
+            "Select Commodity",
+            avail_comms,
+            index=avail_comms.index("Onion") if "Onion" in avail_comms else 0,
+        )
     markets_avail = get_markets_for_commodity(commodity, min_rows=10)
     default_mkts = [m for m in ["Pune", "Lasalgaon", "Mumbai", "Nashik"] if m in markets_avail][:3]
     if len(default_mkts) < 2:
@@ -399,14 +443,14 @@ def page_market_comparison():
 def page_household_affordability():
     st.title("Household Food Affordability & Vulnerability Monitor")
     st.caption(
-        "Evaluates household monthly food-budget share using observed DCA retail prices "
-        "and strict complete-basket rules (no mixed current/missing future prices)."
+        "Evaluates household monthly food-budget share using actual observed DCA retail references (when available) "
+        "or explicit user-supplied prices — never fabricated Rs.45/Kg defaults or fake predicted retail models."
     )
 
     ctx = st.session_state.get("affordability_context")
     if ctx:
         st.info(
-            f"**Forecast Context Linked:** `{ctx['commodity']} @ {ctx['market']}` | "
+            f"**Linked Validated Wholesale Forecast Context:** `{ctx['commodity']} @ {ctx['market']}` | "
             f"Projected Next-Session Wholesale Delta: `{ctx['wholesale_change_pct']:+.2f}%` "
             f"(Predicted Modal: Rs. {ctx['predicted_wholesale_qtl']:,.2f}/Qtl)."
         )
@@ -425,46 +469,103 @@ def page_household_affordability():
         {"commodity": "Sugar", "qty": 3.0},
     ]
 
-    apply_stress = st.checkbox(
-        "Simulate hypothetical scenario: pass linked wholesale % change directly onto linked item's retail price",
-        value=bool(ctx),
-        disabled=ctx is None,
-        help="Scenario sensitivity assumption only — wholesale-to-retail econometric transmission requires paired city series.",
+    st.info(
+        "**Retail ML Prediction Status:** `Unavailable` (0 same-city wholesale–retail training pairs). "
+        "You may inspect current affordability using actual DCA/user-supplied prices, or optionally "
+        "explore a **Hypothetical Sensitivity Scenario** below."
     )
 
+    run_scenario = st.checkbox(
+        "Enable Hypothetical Sensitivity Scenario (Assumes hypothetical future prices — NOT an ML retail prediction)",
+        value=False,
+    )
+    apply_ws_passthrough = False
+    if run_scenario and ctx is not None:
+        apply_ws_passthrough = st.checkbox(
+            f"Hypothetical 100% pass-through assumption: apply {ctx['wholesale_change_pct']:+.2f}% wholesale change directly onto {ctx['commodity']} retail price",
+            value=False,
+            help="Pure sensitivity assumption only — wholesale-to-retail econometric transmission is NOT estimated.",
+        )
+
     basket_payload: List[Dict[str, Any]] = []
-    include_all_future = st.checkbox("Include Projected/Scenario Future Retail Prices for ALL Basket Items", value=apply_stress)
+    missing_manual_entry: List[str] = []
 
     for idx, item in enumerate(default_items):
         ref = get_observed_retail_price(item["commodity"], try_live_dca=try_live_dca)
-        obs_kg = float(ref["retail_price_rs_per_kg"]) if ref.get("retail_price_rs_per_kg") else 45.0
-        obs_meta = f"{ref.get('centre', 'DCA')} | {ref.get('observation_date', 'Archive')}"
+        has_obs = ref.get("retail_price_rs_per_kg") is not None
 
-        r1, r2, r3, r4 = st.columns([2, 1.5, 2, 2])
-        r1.markdown(f"**{item['commodity']}**\n\n`DCA Obs ({obs_meta})`")
-        qty = r2.number_input(f"Qty (Kg/mo) [{item['commodity']}]", min_value=0.0, value=item["qty"], step=1.0, key=f"qty_{idx}")
-        cur_p = r3.number_input(f"Current Retail (Rs/Kg) [{item['commodity']}]", min_value=0.0, value=obs_kg, step=2.0, key=f"cur_{idx}")
-
-        pred_default = cur_p
-        if apply_stress and ctx and ctx["commodity"].lower() == item["commodity"].lower():
-            pred_default = round(cur_p * (1.0 + ctx["wholesale_change_pct"] / 100.0), 2)
-
-        if include_all_future:
-            fut_p = r4.number_input(f"Scenario Future (Rs/Kg) [{item['commodity']}]", min_value=0.0, value=pred_default, step=2.0, key=f"fut_{idx}")
+        r1, r2, r3, r4 = st.columns([2.2, 1.3, 2, 2])
+        if has_obs:
+            obs_kg = float(ref["retail_price_rs_per_kg"])
+            stale_tag = "Archived Historical DCA" if ref.get("is_stale_archive") else "Live DCA"
+            r1.markdown(
+                f"**{item['commodity']}**\n\n"
+                f"`{stale_tag}: {ref.get('centre')} ({ref.get('observation_date')})`"
+            )
         else:
-            fut_p = None
-            r4.caption("Scenario prediction omitted")
+            obs_kg = 0.0
+            r1.markdown(f"**{item['commodity']}**\n\n`DCA Retail: Unavailable — Enter User Supplied`")
+
+        qty = r2.number_input(
+            f"Qty (Kg/mo) [{item['commodity']}]",
+            min_value=0.0,
+            value=item["qty"],
+            step=1.0,
+            key=f"qty_{idx}",
+        )
+        cur_p = r3.number_input(
+            f"Current Retail (Rs/Kg) [{item['commodity']}]",
+            min_value=0.0,
+            value=obs_kg,
+            step=2.0,
+            key=f"cur_{idx}",
+        )
+
+        if has_obs and abs(cur_p - obs_kg) < 1e-6:
+            curr_src = str(ref.get("provenance", "Actual Observed DCA"))
+        else:
+            curr_src = "User Supplied"
+
+        if not has_obs and cur_p <= 0.0 and qty > 0.0:
+            missing_manual_entry.append(item["commodity"])
+
+        fut_p: Optional[float] = None
+        pred_src = "Unavailable"
+        if run_scenario:
+            scen_default = cur_p
+            if apply_ws_passthrough and ctx and ctx["commodity"].lower() == item["commodity"].lower() and cur_p > 0:
+                scen_default = round(cur_p * (1.0 + ctx["wholesale_change_pct"] / 100.0), 2)
+                pred_src = "Hypothetical 100% Wholesale Pass-Through Scenario"
+            else:
+                pred_src = "Hypothetical User Scenario Price"
+            fut_p = r4.number_input(
+                f"Hypothetical Scenario (Rs/Kg) [{item['commodity']}]",
+                min_value=0.0,
+                value=scen_default,
+                step=2.0,
+                key=f"fut_{idx}",
+            )
+        else:
+            r4.caption("Retail ML Prediction: Unavailable")
 
         basket_payload.append(
             {
                 "commodity_name": item["commodity"],
                 "monthly_quantity_kg": qty,
                 "current_retail_price_per_kg": cur_p,
+                "current_price_source": curr_src,
                 "predicted_retail_price_per_kg": fut_p,
+                "prediction_source": pred_src,
             }
         )
 
     if st.button("Compute Household Vulnerability Assessment", type="primary"):
+        if missing_manual_entry:
+            st.error(
+                f"Official DCA retail prices are unavailable for {missing_manual_entry}. "
+                "Please enter explicit User Supplied retail prices (> 0 Rs/Kg) — silent Rs.45 fallbacks are prohibited."
+            )
+            return
         try:
             res = calculate_household_affordability(
                 monthly_income=income,
@@ -479,15 +580,23 @@ def page_household_affordability():
             m3.metric("Vulnerability Status", res["affordability_status"])
             m4.metric("Remaining Income", f"Rs. {res['discretionary_income_remaining_rs']:,.2f}")
 
-            if res["has_complete_predictions"]:
-                st.subheader("Projected / Scenario Impact (Complete Basket)")
+            if res["has_complete_predictions"] and run_scenario:
+                st.subheader("Hypothetical Sensitivity Scenario (Not an ML Retail Prediction)")
+                if apply_ws_passthrough and ctx:
+                    st.caption(
+                        f"Sensitivity assumption: 100% percentage pass-through applied from wholesale {ctx['commodity']} delta "
+                        "onto retail price; not econometrically estimated."
+                    )
                 p1, p2, p3, p4 = st.columns(4)
                 p1.metric("Scenario Basket Cost", f"Rs. {res['predicted_food_basket_cost_rs']:,.2f}", f"{res['monthly_inflation_impact_rs']:+.2f} Rs")
                 p2.metric("Scenario Budget Share", f"{res['predicted_food_budget_share_pct']:.2f}%", f"{res['budget_share_change_pct_points']:+.2f} pp")
                 p3.metric("Scenario Status", str(res["predicted_affordability_status"]))
                 p4.metric("Items Evaluated", str(len(res["item_breakdown"])))
             else:
-                st.info(f"**Future Scenario Status:** `{res['prediction_status']}` — provide future prices for all items to compare projected affordability.")
+                st.info(
+                    f"**Projected Future Retail Basket:** `{res['prediction_status']}` — "
+                    "Retail ML prediction is unavailable due to absent paired training data."
+                )
 
             st.dataframe(pd.DataFrame(res["item_breakdown"]), width="stretch", hide_index=True)
             st.caption(res["methodology_disclaimer"])
@@ -497,7 +606,10 @@ def page_household_affordability():
 
 def page_benchmarks():
     st.title("Model Benchmarks & Experimental Audit")
-    st.caption("All metrics loaded directly from regenerated evaluation CSV/JSON artifacts (Validation-selected, Untouched Test evaluated once).")
+    st.caption(
+        "All candidate selection happens strictly on Validation (using DatePurgedWalkForwardCV); "
+        "only the Validation-selected Champion and Baseline are evaluated once on untouched Test."
+    )
 
     uni_meta = _read_json(MODELS_DIR / "unified_model_metadata.json")
     clf_meta = _read_json(MODELS_DIR / "spike_classifier_metadata.json")
@@ -515,14 +627,18 @@ def page_benchmarks():
             ov = uni_meta.get("overall_test_metrics", {})
             bm = uni_meta.get("persistence_baseline_test_metrics", {})
             macro = uni_meta.get("macro_average_test_metrics", {})
-            st.markdown(f"**Champion Selected Strictly on Validation:** `{uni_meta.get('champion_algorithm')}` | **Params:** `{uni_meta.get('champion_hyperparameters')}`")
+            sel_metric = uni_meta.get("primary_selection_metric", "Val_Macro_RMSE")
+            st.markdown(
+                f"**Primary Selection Metric:** `{sel_metric}` | **Selected Champion:** `{uni_meta.get('champion_algorithm')}` | "
+                f"**Params:** `{uni_meta.get('champion_hyperparameters')}` | **Schema:** `{uni_meta.get('feature_schema_version')}`"
+            )
             st.markdown(f"**Chronological Cutoffs:** `{uni_meta.get('split_cutoffs')}`")
 
             k1, k2, k3, k4 = st.columns(4)
-            k1.metric("Pooled Test RMSE", f"Rs. {ov.get('rmse_rs_per_qtl')}", f"Base Rs. {bm.get('RMSE')}")
-            k2.metric("Pooled R² (Scale-Inflated)", f"{ov.get('r2_score')}", "See Macro R²")
-            k3.metric("Macro-Avg Test RMSE", f"Rs. {macro.get('macro_avg_rmse')}", f"Base Rs. {macro.get('baseline_macro_avg_rmse')}")
-            k4.metric("Macro-Avg Test R²", f"{macro.get('macro_avg_r2')}")
+            k1.metric("Macro-Avg Test RMSE (Primary)", f"Rs. {macro.get('macro_avg_rmse')}", f"Base Rs. {macro.get('baseline_macro_avg_rmse')}")
+            k2.metric("Macro-Avg Test R²", f"{macro.get('macro_avg_r2')}")
+            k3.metric("Pooled Test RMSE (Secondary)", f"Rs. {ov.get('rmse_rs_per_qtl')}", f"Base Rs. {bm.get('RMSE')}")
+            k4.metric("Pooled R² (Scale-Inflated)", f"{ov.get('r2_score')}", "Multi-commodity scale offset")
 
             st.subheader("Per-Commodity Untouched Test Performance vs Persistence Baseline")
             rows = []
@@ -539,32 +655,38 @@ def page_benchmarks():
                 })
             st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
-            st.subheader("Leave-One-Commodity-Out (Unseen Commodity Generalization Test)")
+            st.subheader("Independent Leave-One-Commodity-Out (LOCO) Evaluation")
             loco_rows = []
             for comm, m in uni_meta.get("leave_one_commodity_out_experiment", {}).items():
                 loco_rows.append({
                     "Held_Out_Commodity": comm,
+                    "Independent_Val_Selected_Model": m.get("selected_algorithm", "N/A"),
                     "Model_RMSE": m["model_metrics"]["RMSE"],
                     "Persistence_RMSE": m["persistence_baseline"]["RMSE"],
                     "Beats_Baseline": m["beats_baseline_rmse"],
                     "Model_R2": m["model_metrics"]["R2"],
                 })
             st.dataframe(pd.DataFrame(loco_rows), width="stretch", hide_index=True)
-            st.warning("Because Leave-One-Commodity-Out only beats persistence on 1 of 4 held-out crops, unseen commodity generalization is disabled by default.")
 
-            st.subheader("Validation Leaderboard (Model Selection Table)")
+            st.subheader("Validation Leaderboard (Model Selection Table — Sorted by Primary Metric)")
             st.dataframe(pd.DataFrame(uni_meta.get("validation_candidates_benchmarked", [])), width="stretch", hide_index=True)
 
     with tab2:
         for comm in ["Tomato", "Onion"]:
             safe = comm.lower()
-            st.subheader(f"{comm} @ Pune — Untouched Test Leaderboard")
+            st.subheader(f"{comm} @ Pune — Untouched Final Test (Champion vs Baseline)")
             df_test = _read_csv(REPORTS_DIR / f"model_comparison_metrics_{safe}.csv")
             if not df_test.empty:
                 st.dataframe(df_test, width="stretch", hide_index=True)
-            with st.expander(f"{comm} Classification, Clustering & Gradient Descent Tables"):
+            with st.expander(f"{comm} Validation Leaderboards & Train-Only Clustering Profiles"):
+                st.caption("Validation Leaderboard (14 Regression Candidates):")
+                st.dataframe(_read_csv(REPORTS_DIR / f"validation_leaderboard_{safe}.csv"), width="stretch", hide_index=True)
+                st.caption("Classification Untouched Test (Champion vs Majority Baseline):")
                 st.dataframe(_read_csv(REPORTS_DIR / f"classification_comparison_{safe}.csv"), width="stretch", hide_index=True)
+                st.caption("Train-Only Unsupervised Clustering & Cluster Profiles:")
                 st.dataframe(_read_csv(REPORTS_DIR / f"clustering_comparison_{safe}.csv"), width="stretch", hide_index=True)
+                st.dataframe(_read_csv(REPORTS_DIR / f"clustering_profiles_{safe}.csv"), width="stretch", hide_index=True)
+                st.caption("Gradient Descent Convergence Benchmarks (Validation RMSE):")
                 st.dataframe(_read_csv(REPORTS_DIR / f"gradient_descent_comparison_{safe}.csv"), width="stretch", hide_index=True)
 
     with tab3:
@@ -585,37 +707,34 @@ def page_benchmarks():
         st.subheader("Retail Price Estimation Feasibility Audit")
         st.json(ret_meta)
         st.subheader("Generated Evaluation Plots")
-        imgs = sorted(FIGURES_DIR.glob("*.png"))
-        for img_path in imgs:
+        for img_path in sorted(FIGURES_DIR.glob("*.png")):
             st.image(str(img_path), caption=img_path.name, use_container_width=True)
 
 
 def page_methodology():
-    st.title("Academic Viva, Architecture & Scientific Guarantees")
+    st.title("Academic Viva, Parity Contract & Scientific Guarantees")
     st.markdown(
         """
-### Verified Pipeline Architecture (`v3.0.0-leakfree`)
-1. **Strict Chronological Time-Series Discipline:**
-   - All specialist and unified models split strictly chronologically with shared date cutoffs (`Train: 2016-01-09..2018-02-15`, `Validation: 2018-02-17..2018-07-22`, `Test: 2018-07-24..2018-12-30`).
-   - Rows whose `target_date_t_plus_1` crosses a partition boundary are purged (10 rows removed in unified split).
-   - Hyperparameter tuning uses `TimeSeriesSplit` inside `Train`; Champion selection uses `Validation` RMSE/Macro-F1 only; Test data is evaluated once after refitting `Train+Validation`.
-2. **Zero Lookahead Leakage & Exact Market Granularity:**
-   - Current session `modal_price_rs_per_qtl` ($P_t$) is explicitly distinct from `price_lag_1` ($P_{t-1}$).
-   - 7-session rolling features operate strictly over shifted history $[t-7..t-1]$.
-   - Exact single APMC markets (`Pune`, `Mumbai`, `Lasalgaon`) are preserved without silent submarket merging.
-3. **Honest Commodity & Retail Boundaries:**
-   - Dynamic guard blocks unseen commodities (`UnsupportedCommodityError`) supported by Leave-One-Commodity-Out empirical evidence.
-   - Wholesale-to-retail ML estimation is marked **Unavailable** (`retail_model_metadata.json`) due to 0 matched Maharashtra city-date pairs between 2016–2018 AGMARKNET and 2010–2012 DCA retail archives; mathematical `÷ 100` is labeled `Wholesale Equiv Rs/Kg`.
-4. **Early-Warning Classifier & Household Affordability:**
-   - Integrated `spike_classifier.joblib` (Normal / Surge / Crash) reports probabilities and PR-AUC with honest low-precision caveats.
-   - Affordability engine computes NSSO HCES budget share (`Current` vs `Scenario`) and requires complete predicted item sets.
+### Verified Pipeline Architecture (`v3.1.0-parity`)
+1. **Training–Inference Feature Parity (`reports/feature_contract.md`):**
+   - `price_momentum_7` is unified identically across training and inference as 7-session percentage momentum `%` via `compute_price_momentum_7_pct()`.
+   - `rolling_mean_7`, `rolling_std_7`, `rolling_min_7`, and `rolling_max_7` cover strictly the prior 7 active sessions `[t-7..t-1]`, excluding `t`.
+2. **Mode A vs. Mode B Separation:**
+   - **Mode A (Validated Forecasting):** Requires continuous genuine APMC prices, genuine 7-session rolling features, physical arrivals, validated commodity, and validated pair.
+   - **Mode B (Experimental Manual Exploration):** Discloses subset approximations clearly and prohibits silent fabricated predictions.
+3. **Date-Grouped Target-Purged Cross-Validation (`DatePurgedWalkForwardCV`):**
+   - Internal CV splits on unique observation dates, preserving multi-commodity same-date alignment and purging any train target reaching a validation fold.
+   - Both independent LOCO evaluation and Train-only unsupervised clustering eliminate cross-split information leakage.
+4. **Honest Live Data, Retail & Affordability Boundaries:**
+   - Exact alias matching prevents submarket mixing (`Pune(Pimpri)` / `Lasalgaon(Niphad)`); missing live API arrivals remain `NaN`/`Unavailable` rather than `0.0`.
+   - Zero hardcoded retail fallbacks (`Rs.45/Kg` removed); household future scenarios distinguish sensitivity assumptions from ML predictions.
 """
     )
 
 
 def main():
     st.sidebar.title("AI Food Inflation System")
-    st.sidebar.caption("Pipeline: `v3.0.0-leakfree`")
+    st.sidebar.caption("Schema: `v3.1.0-parity`")
     page = st.sidebar.radio(
         "Navigation",
         [
@@ -629,11 +748,13 @@ def main():
 
     uni_meta = _read_json(MODELS_DIR / "unified_model_metadata.json")
     if uni_meta:
+        macro = uni_meta.get("macro_average_test_metrics", {})
         st.sidebar.divider()
         st.sidebar.caption(
             f"**Validated Crops:** {', '.join(uni_meta.get('supported_commodities', []))}\n\n"
             f"**Unified Champion:** {uni_meta.get('champion_algorithm')}\n\n"
-            f"**Test RMSE:** Rs. {uni_meta.get('overall_test_metrics', {}).get('rmse_rs_per_qtl')}/Qtl"
+            f"**Primary Metric:** {uni_meta.get('primary_selection_metric', 'Val_Macro_RMSE')}\n\n"
+            f"**Test Macro RMSE:** Rs. {macro.get('macro_avg_rmse')}/Qtl"
         )
 
     if page.startswith("1."):

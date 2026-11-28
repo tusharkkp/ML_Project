@@ -1,4 +1,4 @@
-Model,MAE,MSE,RMSE,R2,MAPE (%)
-Batch Gradient Descent,78.22,11031.66,105.03,0.7901,12.11
-Stochastic Gradient Descent,78.27,11039.04,105.07,0.7899,12.23
-Mini-batch GD (batch=32),76.82,10987.33,104.82,0.7909,11.67
+Model,Evaluated_Split,Val_MAE,Val_MSE,Val_RMSE,Val_R2,Val_MAPE (%)
+Batch Gradient Descent,Validation,81.22,14492.99,120.39,0.796,13.78
+Stochastic Gradient Descent,Validation,82.51,14709.5,121.28,0.793,13.99
+Mini-batch GD (batch=32),Validation,81.29,14552.22,120.63,0.7952,13.63

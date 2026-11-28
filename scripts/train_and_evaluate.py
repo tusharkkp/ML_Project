@@ -1,11 +1,8 @@
 """
-Leak-Free Specialist Training, TimeSeriesSplit CV & Validation Selection (Pune Tomato).
+Leak-Free Specialist Training, DatePurgedWalkForwardCV & Validation Selection (Pune Tomato).
 
-Fixes earlier test-set leakage by:
-1. Tuning hyperparameters inside Train via 5-fold TimeSeriesSplit CV.
-2. Ranking and selecting the winning model strictly on Validation RMSE.
-3. Refitting the single selected winner on combined Train + Validation.
-4. Evaluating ONCE on the untouched Test partition with Persistence Baseline comparison.
+Uses `DatePurgedWalkForwardCV` inside Train, selects Champion strictly on Validation RMSE,
+refits selected Champion on Train+Validation, and evaluates ONLY Champion vs Persistence on Test.
 """
 
 import json
@@ -14,10 +11,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import Lasso, LinearRegression, Ridge
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.tree import DecisionTreeRegressor
@@ -26,7 +24,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.features import SPECIALIST_NUMERIC_FEATURES, TARGET_REG_COL
+from src.features import (
+    SPECIALIST_NUMERIC_FEATURES,
+    TARGET_REG_COL,
+    DatePurgedWalkForwardCV,
+)
 from src.metrics import compute_regression_metrics
 
 DATA_PATH = PROJECT_ROOT / "data" / "processed" / "model_ready_pune_tomato.csv"
@@ -35,26 +37,31 @@ REPORTS_DIR = PROJECT_ROOT / "reports"
 
 def main():
     if not DATA_PATH.exists():
-        raise FileNotFoundError(f"Missing {DATA_PATH}. Run scripts/build_features.py --all first.")
+        raise FileNotFoundError(f"Missing {DATA_PATH}. Run py -3.12 scripts/build_features.py --all first.")
 
     df = pd.read_csv(DATA_PATH)
     df["observation_date"] = pd.to_datetime(df["observation_date"])
+    df["target_date_t_plus_1"] = pd.to_datetime(df["target_date_t_plus_1"])
     df = df.sort_values("observation_date").reset_index(drop=True)
 
-    train_df = df[df["split_tag"] == "Train"].copy()
-    val_df = df[df["split_tag"] == "Validation"].copy()
-    test_df = df[df["split_tag"] == "Test"].copy()
+    train_df = df[df["split_tag"] == "Train"].copy().reset_index(drop=True)
+    val_df = df[df["split_tag"] == "Validation"].copy().reset_index(drop=True)
+    test_df = df[df["split_tag"] == "Test"].copy().reset_index(drop=True)
     train_val_df = pd.concat([train_df, val_df], ignore_index=True)
 
-    X_train, y_train = train_df[SPECIALIST_NUMERIC_FEATURES], train_df[TARGET_REG_COL].values
-    X_val, y_val = val_df[SPECIALIST_NUMERIC_FEATURES], val_df[TARGET_REG_COL].values
-    X_tv, y_tv = train_val_df[SPECIALIST_NUMERIC_FEATURES], train_val_df[TARGET_REG_COL].values
-    X_test, y_test = test_df[SPECIALIST_NUMERIC_FEATURES], test_df[TARGET_REG_COL].values
+    X_train, y_train = train_df[SPECIALIST_NUMERIC_FEATURES], train_df[TARGET_REG_COL].to_numpy(dtype=float)
+    X_val, y_val = val_df[SPECIALIST_NUMERIC_FEATURES], val_df[TARGET_REG_COL].to_numpy(dtype=float)
+    X_tv, y_tv = train_val_df[SPECIALIST_NUMERIC_FEATURES], train_val_df[TARGET_REG_COL].to_numpy(dtype=float)
+    X_test, y_test = test_df[SPECIALIST_NUMERIC_FEATURES], test_df[TARGET_REG_COL].to_numpy(dtype=float)
 
-    val_base = compute_regression_metrics(y_val, val_df["modal_price_rs_per_qtl"].values)
-    test_base = compute_regression_metrics(y_test, test_df["modal_price_rs_per_qtl"].values)
+    val_base = compute_regression_metrics(y_val, val_df["modal_price_rs_per_qtl"].to_numpy(dtype=float))
+    test_base = compute_regression_metrics(y_test, test_df["modal_price_rs_per_qtl"].to_numpy(dtype=float))
 
-    tscv = TimeSeriesSplit(n_splits=5)
+    purged_cv = DatePurgedWalkForwardCV(
+        observation_dates=train_df["observation_date"],
+        target_dates=train_df["target_date_t_plus_1"],
+        n_splits=5,
+    )
     candidates = [
         ("Lasso Regression (L1)", Pipeline([("scaler", StandardScaler()), ("reg", Lasso(max_iter=10000, random_state=42))]), {"reg__alpha": [0.1, 1.0, 5.0, 10.0, 50.0]}),
         ("Multiple Linear Regression", Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())]), {}),
@@ -68,7 +75,7 @@ def main():
     fitted = {}
     for name, pipe, grid in candidates:
         if grid:
-            gs = GridSearchCV(pipe, grid, cv=tscv, scoring="neg_root_mean_squared_error", n_jobs=1)
+            gs = GridSearchCV(pipe, grid, cv=purged_cv, scoring="neg_root_mean_squared_error", n_jobs=1)
             gs.fit(X_train, y_train)
             best_pipe = gs.best_estimator_
             cv_rmse = round(float(-gs.best_score_), 2)
@@ -97,17 +104,15 @@ def main():
 
     board = pd.DataFrame(rows).sort_values("Val_RMSE").reset_index(drop=True)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    board_path = REPORTS_DIR / "specialist_tomato_validation_leaderboard.csv"
-    board.to_csv(board_path, index=False)
+    board.to_csv(REPORTS_DIR / "specialist_tomato_validation_leaderboard.csv", index=False)
 
     winner_name = str(board.iloc[0]["Model"])
     winner_pipe, winner_params = fitted[winner_name]
-    print("VALIDATION LEADERBOARD (PUNE TOMATO):")
+    print("VALIDATION LEADERBOARD (PUNE TOMATO — DATE-PURGED CV):")
     print(board[["Model", "Val_MAE", "Val_RMSE", "Val_R2", "Beats_Val_Baseline"]].to_string(index=False))
     print(f"\nSelected Strictly on Validation: {winner_name} ({winner_params})")
 
-    # Final refit on Train+Val -> Single evaluation on untouched Test
-    from sklearn.base import clone
+    # Final refit on Train+Val -> Single evaluation ONLY of Champion vs Baseline on untouched Test
     final_pipe = clone(winner_pipe).fit(X_tv, y_tv)
     test_preds = final_pipe.predict(X_test)
     tm = compute_regression_metrics(y_test, test_preds)

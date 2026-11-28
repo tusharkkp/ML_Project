@@ -1,12 +1,3 @@
 Model,Accuracy,Precision,Recall,F1-Score,ROC-AUC,PR-AUC,Selected_By_Val,Val_Threshold
 Majority Baseline (class=1),0.4427,0.4427,1.0,0.6138,0.5,0.4427,False,
-Logistic Regression,0.4351,0.4385,0.9828,0.6064,0.5503,0.4752,False,0.25
-Gaussian Naive Bayes,0.4427,0.4427,1.0,0.6138,0.4844,0.4453,False,0.25
-KNN (k=5),0.5267,0.4778,0.7414,0.5811,0.5188,0.459,False,0.25
-Decision Tree (CART),0.4504,0.4386,0.8621,0.5814,0.4709,0.4522,False,0.25
-SVM (RBF Kernel),0.4427,0.4427,1.0,0.6138,0.4877,0.4394,False,0.45
-Bagging Classifier,0.458,0.4488,0.9828,0.6162,0.5704,0.5162,True,0.35
-AdaBoost Classifier,0.4351,0.4333,0.8966,0.5843,0.5437,0.5224,False,0.25
-Gradient Boosting Classifier,0.4427,0.4419,0.9828,0.6096,0.5481,0.5532,False,0.25
-Stacking Classifier,0.4427,0.4427,1.0,0.6138,0.4783,0.4446,False,0.25
-Voting Classifier,0.4427,0.4427,1.0,0.6138,0.5191,0.4383,False,0.25
+KNN (k=5),0.5115,0.4659,0.7069,0.5616,0.5007,0.4397,True,0.25

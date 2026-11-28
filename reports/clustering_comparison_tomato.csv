@@ -1,4 +1,4 @@
-Model,Silhouette,Davies-Bouldin
-K-Means (k=2),0.5119,0.9196
-"Hierarchical (Ward, k=2)",0.51,0.9266
-DBSCAN (clusters=4),0.4808,1.0169
+Model,Fitted_Split,Out_Of_Sample_Supported,Train_Silhouette,Train_Davies_Bouldin,Val_Out_Of_Sample_Silhouette,Limitation_Note
+K-Means (k=2),Train Only,True,0.4675,0.918,,Selected on Train only; high silhouette alone does not prove stable forecasting regimes.
+"Hierarchical (Ward, k=2)",Train Only (Non-Inductive),False,0.4461,1.0244,,Agglomerative clustering lacks native out-of-sample `.predict()`; descriptive Train analysis only.
+DBSCAN (Train clusters=3),Train Only (Transductive),False,0.2991,0.8538,,Transductive density clustering restricted strictly to Train without unseen-sample extrapolation.

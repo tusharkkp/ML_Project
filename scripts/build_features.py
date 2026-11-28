@@ -31,8 +31,11 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.features import (
     CANONICAL_SERIES_SPECS,
     COMMODITY_CATEGORY_MAP,
+    DATASET_VERSION,
+    FEATURE_SCHEMA_VERSION,
     canonicalize_commodity_name,
     engineer_single_series_features,
+    match_canonical_market,
     split_chronologically_with_purging,
 )
 
@@ -70,7 +73,8 @@ def load_wholesale_series(
         sub = sub[mkt_mask].copy()
         explicit_market_label = f"{market}_Submarkets_Aggregated"
     else:
-        mkt_mask = sub["market_name"].str.strip().str.lower() == market.strip().lower()
+        matched_series = sub["market_name"].apply(lambda m: match_canonical_market(str(m), market))
+        mkt_mask = matched_series.notna()
         sub = sub[mkt_mask].copy()
         explicit_market_label = market.strip()
 
@@ -131,7 +135,7 @@ def load_arrivals(
     if allow_submarket_aggregation:
         mkt_mask = sub["market_name"].str.contains(market, case=False, na=False)
     else:
-        mkt_mask = sub["market_name"].str.strip().str.lower() == market.strip().lower()
+        mkt_mask = sub["market_name"].apply(lambda m: match_canonical_market(str(m), market) is not None)
     sub = sub[mkt_mask].copy()
     if sub.empty:
         return pd.DataFrame()
@@ -160,12 +164,11 @@ def build_model_ready_dataset(
     has_arrivals = not arrivals.empty
     if has_arrivals:
         prices = prices.merge(arrivals, on="observation_date", how="left")
-        prices["arrival_quantity_tonnes"] = prices["arrival_quantity_tonnes"].fillna(0.0)
     else:
-        prices["arrival_quantity_tonnes"] = 0.0
+        prices["arrival_quantity_tonnes"] = float("nan")
 
-    # Restrict strictly to primary continuous historical window where dense daily data exists
-    # (prevents single isolated 2026-11-17 API snapshot from creating an 8-year session gap)
+    # Preserve NaN arrival rows instead of silently zero-filling; engineer_single_series_features
+    # drops incomplete arrival windows so genuine arrivals are guaranteed during training.
     featured = engineer_single_series_features(
         prices,
         has_arrivals=has_arrivals,
@@ -179,6 +182,8 @@ def build_model_ready_dataset(
     featured["commodity_name"] = canon
     featured["category"] = category if category is not None else default_cat
     featured["is_perishable"] = int(is_perishable if is_perishable is not None else default_perish)
+    featured["feature_schema_version"] = FEATURE_SCHEMA_VERSION
+    featured["dataset_version"] = DATASET_VERSION
 
     split_df, _ = split_chronologically_with_purging(featured, train_frac=0.70, val_frac=0.15)
     return split_df

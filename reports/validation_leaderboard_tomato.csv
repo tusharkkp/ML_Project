@@ -1,15 +1,15 @@
-Model,Val_MAE,Val_MSE,Val_RMSE,Val_R2,Val_MAPE (%),Best_Params
-Lasso Regression (L1),76.9,14018.98,118.4,0.8027,13.22,"{""alpha"": 10.0}"
-Multiple Linear Regression,82.64,15047.18,122.67,0.7882,13.99,{}
-Voting Regressor,87.1,15325.6,123.8,0.7843,14.78,{}
-Stacking Regressor,84.78,15458.66,124.33,0.7824,13.58,{}
-Simple Linear Regression,80.13,15504.66,124.52,0.7818,14.33,{}
-Ridge Regression (L2),90.72,16107.75,126.92,0.7733,15.36,"{""alpha"": 100.0}"
-SVR (RBF Kernel),89.78,17599.31,132.66,0.7523,14.53,"{""C"": 500.0, ""epsilon"": 5.0}"
-Gradient Boosting Regressor,97.85,18922.72,137.56,0.7336,17.7,"{""learning_rate"": 0.05, ""max_depth"": 3, ""n_estimators"": 100}"
-Random Forest Regressor,104.12,22295.89,149.32,0.6862,17.0,"{""max_depth"": 5, ""min_samples_leaf"": 2}"
-AdaBoost Regressor,118.57,22624.4,150.41,0.6815,19.14,"{""learning_rate"": 0.05, ""n_estimators"": 100}"
-Polynomial Regression (deg=2),121.95,23234.29,152.43,0.673,21.97,"{""alpha"": 100.0}"
-Bagging Regressor,108.18,24317.17,155.94,0.6577,17.92,{}
-Decision Tree Regressor,137.06,27634.37,166.24,0.611,24.36,"{""max_depth"": 3, ""min_samples_leaf"": 2}"
-KNN Regressor,163.25,43457.94,208.47,0.3883,25.19,"{""n_neighbors"": 5}"
+Model,Val_MAE,Val_MSE,Val_RMSE,Val_R2,Val_MAPE (%),Beats_Val_Baseline,Best_Params
+Lasso Regression (L1),75.39,13724.84,117.15,0.8068,12.94,True,"{""alpha"": 10.0}"
+Multiple Linear Regression,80.27,14408.81,120.04,0.7972,13.45,True,{}
+Voting Regressor,85.63,14879.32,121.98,0.7906,14.59,True,{}
+Ridge Regression (L2),85.49,15370.99,123.98,0.7836,14.42,True,"{""alpha"": 10.0}"
+Simple Linear Regression,80.13,15504.66,124.52,0.7818,14.33,False,{}
+SVR (RBF Kernel),89.86,17208.9,131.18,0.7578,14.6,False,"{""C"": 500.0, ""epsilon"": 10.0}"
+Stacking Regressor,99.71,19239.01,138.7,0.7292,15.76,False,{}
+Gradient Boosting Regressor,103.46,20010.2,141.46,0.7183,18.65,False,"{""learning_rate"": 0.05, ""max_depth"": 3, ""n_estimators"": 100}"
+Random Forest Regressor,106.15,21019.43,144.98,0.7041,17.02,False,"{""max_depth"": 12, ""min_samples_leaf"": 5}"
+Bagging Regressor,109.38,25203.53,158.76,0.6452,18.09,False,{}
+Decision Tree Regressor,121.9,25585.44,159.95,0.6399,19.86,False,"{""max_depth"": 4, ""min_samples_leaf"": 10}"
+AdaBoost Regressor,119.25,26736.78,163.51,0.6237,19.07,False,"{""learning_rate"": 0.05, ""n_estimators"": 50}"
+Polynomial Regression (deg=2),129.56,28392.63,168.5,0.6004,23.02,False,"{""alpha"": 100.0}"
+KNN Regressor,158.45,41243.91,203.09,0.4195,25.04,False,"{""n_neighbors"": 7}"

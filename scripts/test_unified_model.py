@@ -82,28 +82,30 @@ def run_eval_summary(predictor: UnifiedCommodityPredictor):
             f"(Base={base_rmse:>6.2f}, Beats={imp}) | R2={cm.get('test_r2'):.4f} | MAPE={cm.get('test_mape_pct'):>5.2f}%"
         )
 
-    print("\nLeave-One-Commodity-Out (Unseen Commodity Check):")
+    print("\nIndependent Leave-One-Commodity-Out (Zero Held-Out Leakage):")
     for comm, lm in m.get("leave_one_commodity_out_experiment", {}).items():
         print(
-            f"  Held-out {comm:<10} | Model RMSE={lm['model_metrics']['RMSE']:>6.2f} "
+            f"  Held-out {comm:<10} | Indep={lm.get('selected_algorithm', 'N/A'):<24} | Model RMSE={lm['model_metrics']['RMSE']:>6.2f} "
             f"vs Base RMSE={lm['persistence_baseline']['RMSE']:>6.2f} | Beats={lm['beats_baseline_rmse']}"
         )
 
 
 def run_custom_test(predictor: UnifiedCommodityPredictor, commodity: str, market: str, price: float, arrivals: float, month: int):
-    print(f"\n--- CUSTOM MANUAL SCENARIO: {commodity} @ {market} ---")
-    res = predictor.predict(
+    print(f"\n--- EXPERIMENTAL MANUAL EXPLORATION (MODE B): {commodity} @ {market} ---")
+    res = predictor.predict_experimental_manual(
         commodity=commodity,
         market=market,
         modal_price=price,
         price_lag_1=price * 0.98,
+        price_lag_3=price * 0.96,
+        price_lag_7=price * 0.94,
         arrival_tonnes=arrivals,
         month=month,
-        allow_manual_approx=True,
     )
-    print(f"Validated Pair    : {res['is_validated_pair']} | Warning={res['validation_warning']}")
+    print(f"Inference Mode    : {res['inference_mode']} (Validated={res['is_validated_forecast']})")
+    print(f"Approximations    : {res['approximations_used']}")
     print(f"Predicted t+1     : Rs. {res['predicted_next_session_rs_per_qtl']:.2f}/Qtl (Equiv Rs. {res['wholesale_equiv_rs_per_kg']}/Kg)")
-    print(f"Alert             : {res['inflation_alert_badge']}")
+    print(f"Disclaimer        : {res['experimental_disclaimer']}")
 
 
 def main():

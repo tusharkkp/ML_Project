@@ -1,15 +1,15 @@
-Model,Val_MAE,Val_MSE,Val_RMSE,Val_R2,Val_MAPE (%),Best_Params
-Lasso Regression (L1),64.9,7740.37,87.98,0.8159,10.08,"{""alpha"": 5.0}"
-Voting Regressor,63.06,8033.63,89.63,0.809,9.88,{}
-Gradient Boosting Regressor,61.87,8099.52,90.0,0.8074,9.69,"{""learning_rate"": 0.1, ""max_depth"": 3, ""n_estimators"": 50}"
-Multiple Linear Regression,66.05,8136.75,90.2,0.8065,10.21,{}
-Ridge Regression (L2),70.3,9332.78,96.61,0.7781,11.24,"{""alpha"": 100.0}"
-Stacking Regressor,76.21,9557.45,97.76,0.7727,12.14,{}
-Simple Linear Regression,67.7,10064.96,100.32,0.7607,10.68,{}
-Random Forest Regressor,72.06,10469.21,102.32,0.751,11.23,"{""max_depth"": 8, ""min_samples_leaf"": 2}"
-Bagging Regressor,71.11,10655.41,103.23,0.7466,11.1,{}
-AdaBoost Regressor,76.36,10873.03,104.27,0.7414,12.07,"{""learning_rate"": 0.1, ""n_estimators"": 100}"
-Polynomial Regression (deg=2),77.78,11246.64,106.05,0.7326,12.16,"{""alpha"": 100.0}"
-Decision Tree Regressor,78.0,12168.87,110.31,0.7106,11.81,"{""max_depth"": 4, ""min_samples_leaf"": 10}"
-SVR (RBF Kernel),96.75,20863.97,144.44,0.5039,14.92,"{""C"": 500.0, ""epsilon"": 10.0}"
-KNN Regressor,98.98,24136.72,155.36,0.426,14.44,"{""n_neighbors"": 5}"
+Model,Val_MAE,Val_MSE,Val_RMSE,Val_R2,Val_MAPE (%),Beats_Val_Baseline,Best_Params
+Lasso Regression (L1),65.71,7946.42,89.14,0.811,10.18,True,"{""alpha"": 5.0}"
+Voting Regressor,64.22,8397.92,91.64,0.8003,10.07,True,{}
+Multiple Linear Regression,67.59,8449.94,91.92,0.7991,10.45,True,{}
+Gradient Boosting Regressor,65.42,8451.29,91.93,0.799,10.24,True,"{""learning_rate"": 0.1, ""max_depth"": 3, ""n_estimators"": 50}"
+Simple Linear Regression,67.7,10064.96,100.32,0.7607,10.68,True,{}
+Ridge Regression (L2),73.46,10069.77,100.35,0.7605,11.71,True,"{""alpha"": 100.0}"
+Stacking Regressor,78.24,10106.8,100.53,0.7597,12.53,True,{}
+Random Forest Regressor,69.73,10588.77,102.9,0.7482,10.91,False,"{""max_depth"": 5, ""min_samples_leaf"": 2}"
+Bagging Regressor,71.19,10682.58,103.36,0.746,11.11,False,{}
+Polynomial Regression (deg=2),76.86,10874.51,104.28,0.7414,12.0,False,"{""alpha"": 100.0}"
+AdaBoost Regressor,73.71,11256.27,106.1,0.7323,11.25,False,"{""learning_rate"": 0.05, ""n_estimators"": 50}"
+Decision Tree Regressor,78.0,12168.87,110.31,0.7106,11.81,False,"{""max_depth"": 4, ""min_samples_leaf"": 10}"
+SVR (RBF Kernel),97.34,19687.05,140.31,0.5319,15.03,False,"{""C"": 500.0, ""epsilon"": 10.0}"
+KNN Regressor,93.36,24161.72,155.44,0.4254,13.56,False,"{""n_neighbors"": 5}"

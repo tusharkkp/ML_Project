@@ -1,9 +1,9 @@
-Model,Val_MAE,Val_MSE,Val_RMSE,Val_R2,Val_MAPE,Val_Macro_RMSE,Val_Macro_R2,CV_Train_RMSE,Beats_Val_Baseline,Best_Params
-Ridge Regression (L2),51.55,6926.14,83.22,0.9987,6.28,76.64,0.8152,215.98,True,"{""alpha"": 1.0}"
-ElasticNet Regression,52.87,6927.7,83.23,0.9987,6.42,76.89,0.814,215.96,True,"{""alpha"": 0.01, ""l1_ratio"": 0.8}"
-Multiple Linear Regression,51.26,6958.89,83.42,0.9987,6.24,76.72,0.8149,205.93,True,{}
-Lasso Regression (L1),54.52,7083.49,84.16,0.9987,6.35,78.32,0.7906,210.62,True,"{""alpha"": 10.0}"
-Random Forest Regressor,60.69,9046.2,95.11,0.9983,7.0,90.42,0.7676,277.85,False,"{""max_depth"": 6, ""min_samples_leaf"": 2, ""n_estimators"": 50}"
-Gradient Boosting Regressor,68.8,9233.26,96.09,0.9983,7.88,94.29,0.6679,272.64,False,"{""learning_rate"": 0.05, ""max_depth"": 3, ""n_estimators"": 100}"
-Support Vector Regressor,65.58,15680.71,125.22,0.997,7.64,103.38,0.6516,475.02,False,"{""C"": 500.0, ""epsilon"": 5.0}"
-Decision Tree Regressor,95.1,16174.25,127.18,0.9969,9.97,127.05,0.4592,398.3,False,"{""max_depth"": 4, ""min_samples_leaf"": 5}"
+Model,Val_Macro_RMSE,Val_Macro_MAE,Val_Macro_R2,Val_MAE,Val_MSE,Val_RMSE,Val_R2,Val_MAPE,CV_Train_RMSE,Beats_Val_Macro_Baseline,Beats_Val_Pooled_Baseline,Best_Params
+Multiple Linear Regression,77.15,49.34,0.828,51.77,7056.36,84.0,0.9987,6.24,206.32,True,True,{}
+Ridge Regression (L2),77.19,49.41,0.8278,51.82,7057.42,84.01,0.9987,6.25,219.86,True,True,"{""alpha"": 0.1}"
+Lasso Regression (L1),78.38,52.74,0.8078,54.79,7107.63,84.31,0.9987,6.33,211.49,True,True,"{""alpha"": 10.0}"
+ElasticNet Regression,81.49,55.04,0.8094,56.7,7675.66,87.61,0.9985,6.68,224.04,False,True,"{""alpha"": 0.01, ""l1_ratio"": 0.8}"
+Random Forest Regressor,87.54,58.15,0.7942,59.51,8591.05,92.69,0.9984,6.97,281.21,False,False,"{""max_depth"": 6, ""min_samples_leaf"": 5, ""n_estimators"": 50}"
+Gradient Boosting Regressor,94.43,70.45,0.7025,69.75,9243.84,96.14,0.9983,7.92,290.0,False,False,"{""learning_rate"": 0.05, ""max_depth"": 3, ""n_estimators"": 100}"
+Support Vector Regressor,101.28,64.76,0.6925,68.4,14165.18,119.02,0.9973,7.81,473.11,False,False,"{""C"": 500.0, ""epsilon"": 10.0}"
+Decision Tree Regressor,127.75,97.74,0.4793,95.62,16211.11,127.32,0.9969,10.05,369.69,False,False,"{""max_depth"": 4, ""min_samples_leaf"": 5}"

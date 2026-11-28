@@ -1,7 +1,7 @@
 Model,Val_MAE,Val_MSE,Val_RMSE,Val_R2,Val_MAPE,CV_Train_RMSE,Beats_Val_Baseline,Best_Params
-Multiple Linear Regression,82.64,15047.18,122.67,0.7882,13.99,319.03,True,{}
-Lasso Regression (L1),89.43,15973.49,126.39,0.7752,16.16,340.73,False,"{""reg__alpha"": 50.0}"
-Ridge Regression (L2),90.72,16107.75,126.92,0.7733,15.36,354.03,False,"{""reg__alpha"": 100.0}"
-Polynomial Regression,90.72,16107.75,126.92,0.7733,15.36,354.03,False,"{""poly__degree"": 1, ""reg__alpha"": 100.0}"
-Random Forest Ensemble,114.38,23225.68,152.4,0.6731,18.96,396.79,False,"{""reg__max_depth"": 4, ""reg__min_samples_leaf"": 2, ""reg__n_estimators"": 100}"
-Decision Tree Regressor,137.06,27634.37,166.24,0.611,24.36,415.28,False,"{""reg__max_depth"": 3, ""reg__min_samples_leaf"": 2, ""reg__min_samples_split"": 5}"
+Multiple Linear Regression,80.27,14408.81,120.04,0.7972,13.45,317.98,True,{}
+Ridge Regression (L2),85.49,15370.99,123.98,0.7836,14.42,371.4,True,"{""reg__alpha"": 10.0}"
+Polynomial Regression,85.49,15370.99,123.98,0.7836,14.42,371.4,True,"{""poly__degree"": 1, ""reg__alpha"": 10.0}"
+Lasso Regression (L1),89.43,15973.49,126.39,0.7752,16.16,324.53,False,"{""reg__alpha"": 50.0}"
+Random Forest Ensemble,103.86,20698.72,143.87,0.7086,16.9,470.76,False,"{""reg__max_depth"": 6, ""reg__min_samples_leaf"": 5, ""reg__n_estimators"": 100}"
+Decision Tree Regressor,137.06,27634.37,166.24,0.611,24.36,546.1,False,"{""reg__max_depth"": 3, ""reg__min_samples_leaf"": 2, ""reg__min_samples_split"": 10}"

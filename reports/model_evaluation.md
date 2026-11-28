@@ -1,102 +1,73 @@
-# Machine Learning Model Evaluation & Comparative Analysis (`v3.0.0-leakfree`)
+# Machine Learning Model Evaluation & Comparative Analysis (`v3.1.0-parity`)
 
-**Methodology Guarantee:** All models below were trained under a strict leak-free protocol:
-1. **Feature Isolation:** Lags ($P_{t-1}, P_{t-3}, P_{t-7}$) and 7-session shifted rolling windows ($[t-7 \dots t-1]$) are computed independently within exact `(commodity_name, market_name)` series. Current session `modal_price_rs_per_qtl` ($P_t$) is strictly distinct from `price_lag_1` ($P_{t-1}$).
-2. **Chronological Splitting & Purging:** Shared chronological cutoffs across all series with boundary purging wherever `target_date_t_plus_1` crosses into Validation/Test.
-3. **Validation-Only Model Selection:** Hyperparameters tuned via 5-fold `TimeSeriesSplit` inside `Train`; Champion chosen strictly on `Validation` metrics (`RMSE` for regression, `Macro-F1` for classification); refitted once on `Train + Validation` and evaluated once on untouched `Test`.
-4. **Target Definition:** Next observed active APMC trading session modal wholesale price (`Rs/Quintal`, $t+1$ — not guaranteed next calendar day).
-
----
-
-## 1. Unified Multi-Commodity Regression Pipeline (`Ridge Regression (L2)`)
-
-- **Dataset:** `data/processed/model_ready_unified_commodities_clean.csv` (**3,998 rows** after **10 cross-boundary rows purged**)
-- **Shared Cutoffs:** Train `2,800` (`2016-01-09..2018-02-15`) | Validation `595` (`2018-02-17..2018-07-22`) | Test `603` (`2018-07-24..2018-12-30`)
-- **Validation Champion:** **Ridge Regression (L2)** (`alpha=1.0`, `Val_RMSE = Rs. 83.22/Qtl`, `Val_Macro_RMSE = Rs. 76.64/Qtl`, `Val_R² = 0.9987`)
-
-### A. Overall Pooled vs. Scale-Corrected Macro-Average Test Performance (`N = 603`)
-
-| Aggregation View | Model MAE | Model RMSE | Persistence Baseline RMSE | Model $R^2$ | Model MAPE | Note |
-| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Pooled Global Test** | Rs. 55.27 | **Rs. 93.39** | Rs. 97.99 | 0.9986 | 6.69% | Pooled $R^2$ is inflated by cross-crop price scale differences (Tomato ~700 vs Moong Dal ~7,034) |
-| **Macro-Average Test** | Rs. 50.42 | **Rs. 77.03** | Rs. 78.95 | **0.8603** | 5.86% | Honest unweighted average across all 4 validated commodities |
-
-### B. Per-Commodity Test Breakdown vs. Naive Persistence ($P_{t+1} = P_t$)
-
-| Commodity | Category | Test N | Mean Price | Test MAE | Test RMSE | Persistence RMSE | Beats Persistence? | Test $R^2$ | Test MAPE |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Moong Dal** | Pulses | 123 | Rs. 7,034.15 | Rs. 20.65 | Rs. 45.25 | Rs. 42.29 | No (-2.96) | 0.9847 | 0.29% |
-| **Onion** | Vegetables | 228 | Rs. 867.50 | Rs. 75.72 | **Rs. 122.33** | Rs. 128.41 | **Yes (+6.08)** | 0.8490 | 10.04% |
-| **Sugar** | Sugars & Sweets | 121 | Rs. 3,205.61 | Rs. 27.18 | Rs. 35.59 | Rs. 31.52 | No (-4.07) | 0.8170 | 0.85% |
-| **Tomato** | Vegetables | 131 | Rs. 706.87 | Rs. 78.11 | **Rs. 104.93** | Rs. 113.58 | **Yes (+8.65)** | 0.7905 | 12.25% |
-
-*Key Scientific Insight:* Pooled Ridge improves volatility forecasting on perishable crops (**Onion +6.08**, **Tomato +8.65** Rs/Qtl RMSE over persistence), whereas sticky/low-variance staples (**Moong Dal**, **Sugar**) are slightly harder for a shared regularized hyperplane to beat persistence on MAE/RMSE — confirming why reporting pooled $R^2$ alone would be misleading.
-
-### C. Leave-One-Commodity-Out (LOCO) Unseen Commodity Test
-
-| Held-Out Commodity | Model RMSE (Rs/Qtl) | Persistence RMSE (Rs/Qtl) | Model $R^2$ | Beats Persistence? |
-| :--- | :---: | :---: | :---: | :---: |
-| Moong Dal | 109.36 | 42.29 | 0.9107 | No |
-| Onion | 135.63 | 128.41 | 0.8143 | No |
-| Sugar | 68.88 | 31.52 | 0.3143 | No |
-| Tomato | 104.08 | 113.58 | 0.7938 | Yes |
-
-**Decision:** Because held-out generalization fails persistence on **3 out of 4** commodities, `UnifiedCommodityPredictor` explicitly restricts inference to `['Moong Dal', 'Onion', 'Sugar', 'Tomato']` via `UnsupportedCommodityError`.
+**Methodology Protocol:**
+1. **Training–Inference Parity:** Canonical percentage momentum (`compute_price_momentum_7_pct`), previous-7-session rolling stats strictly excluding `t` (`[t-7..t-1]`), genuine physical arrivals (never imputed from missing as `0.0`), and exact canonical market names (`allow_submarket_aggregation=False`).
+2. **Date-Grouped Purged CV (`DatePurgedWalkForwardCV`):** All tuning folds split unique `observation_date` blocks so multi-commodity same-date rows stay atomic and training targets reaching validation windows are purged.
+3. **Single Untouched Test Rule:** Candidate ranking & optimization benchmarks reside strictly in Validation leaderboards; ONLY the single Validation-selected Champion and Baseline evaluate on untouched `Test`.
+4. **Train-Only Unsupervised Fitting:** Scaling, optimal `k` selection, K-Means, Ward Hierarchical, DBSCAN, and PCA fit strictly inside `Train`.
 
 ---
 
-## 2. Dedicated Specialist Models (`Tomato @ Pune` & `Onion @ Pune`)
+## 1. Unified Multi-Commodity Regression (`Multiple Linear Regression`)
 
-### A. Tomato @ Pune (`N_train=609, N_val=130, N_test=131`)
-*(From [reports/model_comparison_metrics_tomato.csv](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/reports/model_comparison_metrics_tomato.csv))*
+- **Primary Selection Metric:** `Val_Macro_RMSE` (unweighted macro-average across commodities, avoiding Rs.7,000 Moong Dal / Rs.3,200 Sugar scale domination). Secondary: pooled `Val_RMSE`.
+- **Dataset:** `data/processed/model_ready_unified_commodities_clean.csv` (**3,998 rows** after **10 boundary rows purged**)
+- **Unique-Date Cutoffs:** `Train = 2,787` (`2016-01-09..2018-02-12`) | `Validation = 606` (`2018-02-14..2018-07-20`) | `Test = 605` (`2018-07-23..2018-12-30`)
 
-- **Validation Champion:** **Lasso Regression ($L_1$, `alpha=10.0`)** (`Val_MAE=76.90`, `Val_RMSE=118.40`, `Val_R²=0.8027`)
+### A. Validation Leaderboard (`reports/unified_validation_leaderboard.csv`)
 
-| Model | Test MAE | Test MSE | Test RMSE | Test $R^2$ | Test MAPE (%) | Val Selected |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Naive Persistence Baseline ($P_t$) | 69.47 | 12,900.76 | 113.58 | 0.7545 | 10.56% | Baseline |
-| **Lasso Regression (L1)** | **75.95** | **10,736.07** | **103.61** | **0.7957** | **11.99%** | **Yes (Champion)** |
-| Voting Regressor | 76.14 | 10,917.51 | 104.49 | 0.7922 | 11.71% | No |
-| Multiple Linear Regression | 77.00 | 10,999.09 | 104.88 | 0.7907 | 11.77% | No |
-| Ridge Regression (L2) | 83.49 | 11,938.77 | 109.26 | 0.7728 | 13.09% | No |
-| Stacking Regressor (Chronological OOF) | 86.21 | 12,715.85 | 112.76 | 0.7580 | 12.22% | No |
-| Simple Linear Regression | 79.31 | 12,923.16 | 113.68 | 0.7541 | 12.50% | No |
-| Bagging Regressor | 83.47 | 13,502.75 | 116.20 | 0.7430 | 12.57% | No |
-| Random Forest Regressor | 84.13 | 13,519.56 | 116.27 | 0.7427 | 12.59% | No |
-| Gradient Boosting Regressor | 87.18 | 15,352.79 | 123.91 | 0.7078 | 13.71% | No |
-| AdaBoost Regressor | 93.30 | 17,068.08 | 130.64 | 0.6752 | 13.79% | No |
-| Polynomial Regression (deg=2) | 113.17 | 19,386.30 | 139.23 | 0.6311 | 18.23% | No |
-| SVR (RBF Kernel) | 107.78 | 19,487.75 | 139.60 | 0.6291 | 16.65% | No |
-| Decision Tree Regressor | 101.27 | 19,505.33 | 139.66 | 0.6288 | 15.51% | No |
-| KNN Regressor | 174.14 | 48,931.66 | 221.21 | 0.0688 | 26.33% | No |
+| Model | Val_Macro_RMSE | Val_Macro_R2 | Val_RMSE (Pooled) | Val_R2 (Pooled) | Beats Macro Base |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Multiple Linear Regression** *(Champion)* | **77.15** | **0.8280** | **84.00** | 0.9987 | Yes |
+| Ridge Regression (L2, `alpha=0.1`) | 77.19 | 0.8278 | 84.01 | 0.9987 | Yes |
+| Lasso Regression (L1, `alpha=10.0`) | 78.38 | 0.8078 | 84.31 | 0.9987 | Yes |
+| ElasticNet Regression | 81.49 | 0.8094 | 87.61 | 0.9985 | No |
+| Random Forest Regressor | 87.54 | 0.7942 | 92.69 | 0.9984 | No |
+| Gradient Boosting Regressor | 94.43 | 0.7025 | 96.14 | 0.9983 | No |
+| Support Vector Regressor | 101.28 | 0.6925 | 119.02 | 0.9973 | No |
+| Decision Tree Regressor | 127.75 | 0.4793 | 127.32 | 0.9969 | No |
 
-- **Optimization Benchmarks (Tomato):** Mini-batch GD (`RMSE=104.82, R²=0.7909`), Batch GD (`RMSE=105.03, R²=0.7901`), SGD (`RMSE=105.07, R²=0.7899`).
-- **Binary Spike Classifier (`is_price_spike`, Tomato):** Val-selected **Bagging Classifier** (`Val_Threshold=0.35`): Test `Acc=0.4580, Prec=0.4488, Rec=0.9828, F1=0.6162, ROC-AUC=0.5704, PR-AUC=0.5162` (vs Majority Baseline `Acc=0.4427, F1=0.6138`).
-- **Clustering & PCA (Tomato):** K-Means (`k=2`, Silhouette `0.5119`, DB `0.9196`), Hierarchical Ward (`k=2`, Silhouette `0.5100`, DB `0.9266`), DBSCAN (`4 clusters`, Silhouette `0.4808`, DB `1.0169`).
+### B. Untouched Test Evaluation (`N = 605` — Champion vs Persistence Only)
 
-### B. Onion @ Pune (`N_train=601, N_val=128, N_test=130`)
-*(From [reports/model_comparison_metrics_onion.csv](file:///c:/Users/Tushar%20Kaldate/Documents/ML_Project/reports/model_comparison_metrics_onion.csv))*
+- **Macro-Average Test (Primary):** `Macro_MAE = Rs. 50.52` | **`Macro_RMSE = Rs. 77.34`** (Baseline `Rs. 79.10`, **+1.76 Rs/Qtl**) | **`Macro R² = 0.8586`** | `Macro_MAPE = 5.85%`
+- **Pooled Test (Secondary):** `MAE = Rs. 55.31` | **`RMSE = Rs. 93.68`** (Baseline `Rs. 98.16`, **+4.48 Rs/Qtl**) | `Pooled R² = 0.9986` | `MAPE = 6.68%`
 
-- **Validation Champion:** **Lasso Regression ($L_1$, `alpha=5.0`)** (`Val_RMSE=87.98, Val_MAE=64.90, Val_R²=0.8159`)
-- **Untouched Test:** **MAE=76.88, RMSE=121.29, R²=0.6661, MAPE=8.96%** vs Naive Persistence Baseline (`MAE=74.62, RMSE=138.95, R²=0.5618, MAPE=8.32%` -> **+17.66 Rs/Qtl RMSE improvement**).
+| Commodity | Test N | Test MAE | Test RMSE | Persistence RMSE | Beats Persistence | Test $R^2$ | Test MAPE |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Moong Dal** | 123 | 21.20 | 45.45 | 42.29 | No (-3.16) | 0.9846 | 0.30% |
+| **Onion** | 229 | 75.00 | **122.04** | 128.12 | **Yes (+6.08)** | 0.8491 | 9.96% |
+| **Sugar** | 121 | 27.05 | 35.56 | 31.52 | No (-4.04) | 0.8172 | 0.84% |
+| **Tomato** | 132 | 78.81 | **106.31** | 114.48 | **Yes (+8.17)** | 0.7836 | 12.29% |
 
----
+### C. Independent Leave-One-Commodity-Out (LOCO) Evaluation (Zero Held-Out Leakage)
 
-## 3. Global Early-Warning 3-Class Classifier (`Normal / Surge / Crash`)
+| Held-Out Commodity | Independent Val Champion | Model RMSE | Persistence RMSE | Model $R^2$ | Beats Persistence |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| Moong Dal | Lasso Regression (`alpha=10.0`) | 125.98 | 42.29 | 0.8815 | No |
+| Onion | Multiple Linear Regression | 132.16 | 128.12 | 0.8231 | No |
+| Sugar | Multiple Linear Regression | 68.24 | 31.52 | 0.3269 | No |
+| Tomato | Lasso Regression (`alpha=10.0`) | 106.00 | 114.48 | 0.7848 | Yes |
 
-- **Artifact:** `models/spike_classifier.joblib` & `models/spike_classifier_metadata.json`
-- **Definition:** `Surge` (> +10% next-session jump) | `Crash` (< -10% drop) | `Normal` ([-10%, +10%])
-- **Validation Champion (Macro-F1 Selected):** **Logistic Regression (Balanced, `C=10.0`)** (`Val_Macro_F1=0.5377`)
-- **Untouched Test Evaluation (`N=603`, Majority `Normal=78.11%`):**
-  - **Accuracy:** `0.6003` (vs Majority Baseline `0.7811`)
-  - **Macro F1:** `0.4946` | **Any-Spike ROC-AUC:** `0.8117` | **Any-Spike PR-AUC:** `0.4293`
-  - **Per-Class:** `Normal` (Prec=0.989, Rec=0.590), `Surge` (Prec=0.235, Rec=0.824), `Crash` (Prec=0.333, Rec=0.438)
-  - **Honest Reliability Flag (`is_reliable_early_warning = False`):** Class-balanced linear boundaries achieve strong shock recall (82.4% on Surges), but low precision (23.5–33.3%) due to unrecorded exogenous shocks (rainfall/export bans). Displayed strictly as an experimental risk indicator alongside continuous regression alerts.
+**Decision:** Unseen-commodity extrapolation beats persistence on only `1/4` held-out crops; `UnifiedCommodityPredictor` therefore restricts Mode A forecasting strictly to validated commodities and pairs.
 
 ---
 
-## 4. Wholesale-to-Retail Audit Finding (`models/retail_model_metadata.json`)
+## 2. Specialist Pipelines (`Tomato @ Pune` & `Onion @ Pune`)
 
-- **Exact Maharashtra Same-City Same-Date Pairs:** **0** (`Mumbai=0, Pune=0, Nagpur=0, Nashik=0`)
-- **Common Dates Across All Records:** **1** (`2026-11-17`) because DCA historical archives end `2012-11-15` while AGMARKNET archives span `2016–2018`.
-- **Conclusion:** Retail regression is marked **`unavailable_insufficient_paired_data`**. All Rs/Kg outputs derived via `price_qtl / 100` are strictly labeled **Wholesale Equiv (Rs/Kg)**, while the Household Affordability Monitor operates directly on actual observed DCA retail references or user-entered retail prices.
+- **Tomato @ Pune (`Train=609, Val=130, Test=131`):**
+  - **Validation Leaderboard (`reports/validation_leaderboard_tomato.csv`):** 14 regression candidates ranked on Validation (`Val_RMSE`); **Champion:** `Lasso Regression (L1, alpha=10.0)` (`Val_MAE=75.39, Val_RMSE=117.15, Val_R²=0.8068`).
+  - **Untouched Test (`reports/model_comparison_metrics_tomato.csv` — 2 rows only):** `Lasso` **`MAE=75.89, RMSE=103.68, R²=0.7954, MAPE=11.96%`** vs Persistence **`MAE=69.47, RMSE=113.58, R²=0.7545`** (**+9.90 Rs/Qtl improvement**).
+  - **Gradient Descent (Validation Benchmarked Only):** Batch GD (`Val_RMSE=120.39, R²=0.7960`), Mini-batch GD (`Val_RMSE=120.63, R²=0.7952`), SGD (`Val_RMSE=121.28, R²=0.7930`).
+  - **Binary Classification (Val Selected):** `KNN (k=5, threshold=0.25)` -> Untouched Test `Acc=0.5115, F1=0.5616` vs Majority Baseline `Acc=0.4427, F1=0.6138`.
+  - **Train-Only Unsupervised Clustering & Profiles (`reports/clustering_profiles_tomato.csv`):** K-Means `k=2` (`Train_Silhouette=0.4675, DB=0.9180`; Ward `0.4461`; DBSCAN `0.2991`): Cluster 0 (`474` Train rows, Mean `Rs.868.40/Qtl`, CV `49.09%`, Arrival `174.71t`, Spike rate `52.53%`), Cluster 1 (`135` Train rows, Mean `Rs.3,239.26/Qtl`, CV `32.43%`, Arrival `125.27t`, Spike rate `51.11%`). *(Ward and DBSCAN explicitly marked non-inductive / Train-only.)*
+
+- **Onion @ Pune (`Train=601, Val=128, Test=130`):**
+  - **Validation Champion:** `Lasso Regression (L1, alpha=5.0)` (`Val_RMSE=89.14, Val_R²=0.8110`).
+  - **Untouched Test (`reports/model_comparison_metrics_onion.csv`):** `Lasso` **`MAE=76.57, RMSE=121.22, R²=0.6665, MAPE=8.91%`** vs Persistence **`MAE=74.62, RMSE=138.95, R²=0.5618`** (**+17.73 Rs/Qtl improvement**).
+
+---
+
+## 3. Global 3-Class Early-Warning Spike Classifier & Retail Audit
+
+- **Spike Classifier (`spike_classifier_metadata.json`):** `Logistic Regression (Balanced, C=1.0)` selected on Validation (`Val_Macro_F1=0.5506`); Untouched Test (`605` rows): `Accuracy=0.5884` (Majority Base `0.7802`), `Macro-F1=0.4825`, `Any-Spike ROC-AUC=0.8200`, `Any-Spike PR-AUC=0.4671`, Surge Recall `83.82%`, Surge Precision `23.55%` -> tagged `is_reliable_early_warning=False`.
+- **Retail Audit (`retail_model_metadata.json`):** `total_same_city_same_date_pairs = 0`, `retail_estimation_supported = False`.

@@ -100,10 +100,16 @@ def calculate_household_affordability(
                 "commodity_name": name,
                 "monthly_quantity_kg": qty,
                 "current_retail_price_per_kg": round(p_curr, 2),
+                "current_price_source": str(item.get("current_price_source", item.get("price_source", "User Supplied"))),
                 "current_cost_rs": round(item_curr_cost, 2),
                 "predicted_retail_price_per_kg": round(float(raw_pred), 2) if raw_pred is not None else None,
                 "predicted_cost_rs": round(item_pred_cost, 2) if item_pred_cost is not None else None,
-                "prediction_source": item.get("prediction_source", "Provided" if raw_pred is not None else "Unavailable"),
+                "prediction_source": str(
+                    item.get(
+                        "prediction_source",
+                        "Unavailable" if raw_pred is None else "User / Scenario Provided",
+                    )
+                ),
             }
         )
 
