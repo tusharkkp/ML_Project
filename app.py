@@ -171,7 +171,7 @@ def _render_prediction_result(
 
 
 def page_forecasting():
-    st.title("Commodity Price Forecasting & Early-Warning Monitor")
+    st.title("Food Price Forecasting & Early-Warning Monitor")
     st.caption(
         "Separates Mode A Validated Forecasting (complete historical/continuous APMC features) from "
         "Mode B Experimental Manual Exploration under unified schema v3.1.0-parity."
@@ -738,7 +738,7 @@ def main():
     page = st.sidebar.radio(
         "Navigation",
         [
-            "1. Commodity Price Forecasting",
+            "1. Food Price Forecasting",
             "2. Market Comparison",
             "3. Household Affordability",
             "4. Model Benchmarks & Classification",
